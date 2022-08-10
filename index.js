@@ -10,7 +10,7 @@ async function autoScroll(page, selector) {
     const distance = 300;
     const timer = setInterval(() => {
       element.scrollBy(0, distance);
-    }, 300);
+    }, 600);
     setTimeout(() => {
       clearInterval(timer);
     }, 15000);
@@ -107,7 +107,7 @@ async function start() {
       if (res.url().indexOf(string) > 0) {
         const text = await res.text();
         // const json = await JSON.parse(text);
-        fs.writeFileSync("photos.text", text);
+        fs.writeFileSync("crawl_data/photos.text", text);
         console.log("saved");
       }
     });
