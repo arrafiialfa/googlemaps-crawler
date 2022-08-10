@@ -3,16 +3,18 @@ const fs = require("fs");
 
 //auto scroll
 async function autoScroll(page, selector) {
-  await page.evaluate(() => {
+  await page.waitForSelector(selector);
+
+  await page.evaluate((div) => {
+    const element = document.querySelector(div);
     const distance = 300;
     const timer = setInterval(() => {
-      const element = document.querySelector(selector);
       element.scrollBy(0, distance);
     }, 300);
     setTimeout(() => {
       clearInterval(timer);
     }, 15000);
-  });
+  }, selector);
 }
 
 async function WriteDataFromResponse(page, { requestString, saveTo }) {
@@ -78,28 +80,27 @@ async function start() {
   try {
     const spanSelector =
       "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div:nth-child(20) > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
-    const active_hours =
-      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.UmE4Qe > div.C7xf8b > div:nth-child(4) > div.g2BVhd.eoFzo > div:nth-child(17)";
 
     await page.waitForSelector(spanSelector, { Visible: true });
-    await page.waitForSelector(active_hours, { Visible: true });
 
-    const ah = await page.$$eval(active_hours, (elements) => {
-      console.log(elements);
-      elements.forEach((element) => {
-        console.log(element.getAttribute("aria-label"));
-        return element.getAttribute("aria-label");
+    //click the photo
+    await page.$$eval(spanSelector, (elements) => {
+      elements.map((element, i) => {
+        console.log(element.innerHTML, "map");
+        if (
+          element.innerHTML.toLowerCase() === "menu" ||
+          element.innerHTML.toLowerCase() === "makanan &amp; minuman" ||
+          element.innerHTML.toLowerCase() === "food & drink"
+        ) {
+          element.click();
+        }
       });
     });
 
-    console.log(ah);
+    const divToScrollSelector =
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
 
-    await page.$$eval(spanSelector, (elements) => {
-      const element = elements.find(
-        (e) => e.innerHTML.toLowerCase() === "menu" || "asdasdasdasdasd"
-      );
-      element.click();
-    });
+    autoScroll(page, divToScrollSelector);
 
     page.on("response", async (res) => {
       const string = "photo?authuser";
