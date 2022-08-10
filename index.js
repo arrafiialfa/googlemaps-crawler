@@ -97,6 +97,7 @@ async function getData() {
     const photoMenuSelector =
       "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div:nth-child(20) > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
 
+    console.log("navigating to photo menus");
     await navigateToPhotoMenu(page, photoMenuSelector);
 
     const divToScrollSelector =
@@ -120,6 +121,7 @@ async function getData() {
     const moreReviewsSelector = "button.M77dve";
     const xpath = "//button[contains(., 'Ulasan lainnya')]";
 
+    console.log("navigating to more reviews page");
     await navigateToMoreReviews(page2, moreReviewsSelector, xpath);
 
     await autoScroll(page2, divToScrollSelector);
