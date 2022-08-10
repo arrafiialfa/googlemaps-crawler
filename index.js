@@ -2,55 +2,40 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 
 //auto scroll
-async function autoScroll(page) {
+async function autoScroll(page, selector) {
   await page.evaluate(() => {
-    let totalHeight = 0;
-    const distance = 100;
+    const distance = 300;
     const timer = setInterval(() => {
-      const scrollHeight = document.body.scrollHeight;
-      window.scrollBy(0, distance);
-      totalHeight += distance;
-
-      if (totalHeight >= scrollHeight - window.innerHeight) {
-        // clearInterval(timer);
-        // resolve();
-      }
-    }, 100);
+      const element = document.querySelector(selector);
+      element.scrollBy(0, distance);
+    }, 300);
     setTimeout(() => {
       clearInterval(timer);
-    }, 10000);
+    }, 15000);
   });
 }
 
-async function WriteDataFromURL(page, { requestString, saveTo }) {
-  try {
-    page.on("response", async (res) => {
-      const string = requestString;
+async function WriteDataFromResponse(page, { requestString, saveTo }) {
+  page.on("response", async (res) => {
+    const string = requestString;
 
-      if (res.url().indexOf(string) > 0) {
-        const text = await res.text();
-        // const json = await JSON.parse(text);
-        fs.writeFileSync(saveTo, text);
-        console.log("saved");
-      }
+    if (res.url().indexOf(string) > 0) {
+      const text = await res.text();
+      // const json = await JSON.parse(text);
+      fs.writeFileSync(saveTo, text);
+      console.log("saved");
+    }
 
-      setTimeout(() => {
-        try {
-          return fs.readdirSync(saveTo);
-        } catch (er) {
-          console.error(er);
-        }
-      }, 30000);
-    });
-  } catch (er) {
-    console.error(er);
-  }
+    setTimeout(() => {
+      return;
+    }, 20000);
+  });
 }
 
 async function start() {
   const browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disabled-setuid-sandbox"],
-    headless: true,
+    headless: false,
   });
   const page = await browser.newPage();
 
@@ -59,53 +44,70 @@ async function start() {
 
   await page.goto(url);
 
+  // try {
+  //   console.log("seach reviews");
+  //   const morereviewsSelector = "button.M77dve";
+  //   await page.waitForSelector(morereviewsSelector, { Visible: true });
+  //   const [morereviewsbutton] = await page.$x(
+  //     "//button[contains(., 'Ulasan lainnya')]"
+  //   );
+
+  //   await morereviewsbutton.evaluate((b) => {
+  //     b.click();
+  //   });
+
+  //   const divToScrollSelector = ".m6QErb.DxyBCb.kA9KIf.dS8AEf";
+
+  //   autoScroll(page);
+
+  //   page.on("response", async (res) => {
+  //     const string = "listentitiesreviews";
+  //     if (res.url().indexOf(string) > 0) {
+  //       const text = await res.text();
+  //       // const json = await JSON.parse(text);
+  //       fs.writeFileSync("reviews.text", text);
+  //       console.log("saved");
+  //     }
+  //   });
+  // } catch (er) {
+  //   console.error(er);
+  // }
+
+  // await page.goto(url);
+
   try {
-    const morereviewsSelector = "button.M77dve";
-    await page.waitForSelector(morereviewsSelector, { Visible: true });
-    const [morereviewsbutton] = await page.$x(
-      "//button[contains(., 'Ulasan lainnya')]"
-    );
+    const spanSelector =
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div:nth-child(20) > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+    const active_hours =
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.UmE4Qe > div.C7xf8b > div:nth-child(4) > div.g2BVhd.eoFzo > div:nth-child(17)";
 
-    await morereviewsbutton.evaluate((b) => {
-      b.click();
+    await page.waitForSelector(spanSelector, { Visible: true });
+    await page.waitForSelector(active_hours, { Visible: true });
+
+    const ah = await page.$$eval(active_hours, (elements) => {
+      console.log(elements);
+      elements.forEach((element) => {
+        console.log(element.getAttribute("aria-label"));
+        return element.getAttribute("aria-label");
+      });
     });
 
-    await WriteDataFromURL(page, {
-      requestString: "listentitiesreviews",
-      saveTo: "reviews.text",
-    });
-  } catch (er) {
-    console.error(er, "unable to find selectors");
-  }
+    console.log(ah);
 
-  page.on("response", async (res) => {
-    const reviewsString = "listentitiesreviews";
-
-    if (res.url().indexOf(reviewsString) > 0) {
-      const text = await res.text();
-      // const json = await JSON.parse(text);
-      fs.writeFileSync("reviews.txt", text);
-      console.log("reviews saved");
-    }
-  });
-
-  try {
-    const photomenuSelector = "span.fontTitleSmall.fontTitleMedium";
-    await page2.waitForSelector(photomenuSelector, { Visible: true });
-    const [photomenubutton] = await page2.$x("//span[contains(., 'Menu')]");
-
-    await photomenubutton.evaluate((b) => {
-      b.click();
+    await page.$$eval(spanSelector, (elements) => {
+      const element = elements.find(
+        (e) => e.innerHTML.toLowerCase() === "menu" || "asdasdasdasdasd"
+      );
+      element.click();
     });
 
-    page2.on("response", async (res) => {
-      const photoString = "photo?authuser";
-
-      if (res.url().indexOf(photoString) > 0) {
+    page.on("response", async (res) => {
+      const string = "photo?authuser";
+      if (res.url().indexOf(string) > 0) {
         const text = await res.text();
         // const json = await JSON.parse(text);
-        fs.writeFileSync("photos.txt", text);
-        console.log("photo saved");
+        fs.writeFileSync("photos.text", text);
+        console.log("saved");
       }
     });
   } catch (er) {
