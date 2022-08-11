@@ -81,6 +81,8 @@ async function getData() {
   const place_id = "ChIJp4JiUCNP0xQR1JaSjpW_Hms";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
+  const data = [];
+
   try {
     await page.goto(url);
 
@@ -89,7 +91,10 @@ async function getData() {
       if (res.url().indexOf(string) > 0) {
         const text = await res.text();
         // const json = await JSON.parse(text);
-        fs.writeFileSync("crawl_data/photos.text", text);
+        fs.writeFileSync(
+          `crawl_data/photos_timestamp_${Date.now()}.text`,
+          text
+        );
         console.log("saved");
       }
     });
@@ -113,7 +118,10 @@ async function getData() {
       if (res.url().indexOf(string) > 0) {
         const text = await res.text();
         // const json = await JSON.parse(text);
-        fs.writeFileSync("crawl_data/reviews.text", text);
+        fs.writeFileSync(
+          `crawl_data/reviews_timestamp_${Date.now()}.text`,
+          text
+        );
         console.log("saved");
       }
     });
