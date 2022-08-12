@@ -81,7 +81,8 @@ async function getData() {
   const place_id = "ChIJp4JiUCNP0xQR1JaSjpW_Hms";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
-  const data = [];
+  const reviews_result = [];
+  const photomenu_result = [];
 
   try {
     await page.goto(url);
@@ -89,13 +90,23 @@ async function getData() {
     page.on("response", async (res) => {
       const string = "photo?authuser";
       if (res.url().indexOf(string) > 0) {
-        const text = await res.text();
-        // const json = await JSON.parse(text);
-        fs.writeFileSync(
-          `crawl_data/photos_timestamp_${Date.now()}.text`,
-          text
-        );
-        console.log("saved");
+        console.log("payload captured");
+        const arr = await res.text();
+
+        const datastring = `${arr}`;
+
+        const [key, data] = datastring.split("'");
+
+        const obj = JSON.parse(data);
+
+        const photosarr = obj[0];
+
+        fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
+
+        photosarr.forEach((photo) => {
+          photomenu_result.push(photo[6][0]); //photo menu url
+          console.log("photo saved");
+        });
       }
     });
 
@@ -110,19 +121,33 @@ async function getData() {
 
     await autoScroll(page, divToScrollSelector);
 
+    page.evaluate((photomenu_result) => {
+      console.log(photomenu_result);
+    }, photomenu_result);
+
     const page2 = await browser.newPage();
     await page2.goto(url);
 
     page2.on("response", async (res) => {
       const string = "listentitiesreviews";
       if (res.url().indexOf(string) > 0) {
-        const text = await res.text();
-        // const json = await JSON.parse(text);
-        fs.writeFileSync(
-          `crawl_data/reviews_timestamp_${Date.now()}.text`,
-          text
-        );
-        console.log("saved");
+        console.log("data captured");
+        const arr = await res.text();
+
+        const datastring = `${arr}`;
+
+        const [key, data] = datastring.split("'");
+
+        const obj = JSON.parse(data);
+
+        const reviewsarr = obj[2];
+
+        fs.writeFileSync(`crawl_data/reviews_timestamp_${Date.now()}`, data);
+
+        reviewsarr.forEach((review) => {
+          reviews_result.push(review);
+          console.log("reviews saved");
+        });
       }
     });
 
@@ -133,6 +158,16 @@ async function getData() {
     await navigateToMoreReviews(page2, moreReviewsSelector, xpath);
 
     await autoScroll(page2, divToScrollSelector);
+
+    fs.writeFileSync(`crawl_data/photos`, photomenu_result);
+    fs.writeFileSync(`crawl_data/reviews`, reviews_result);
+
+    page2.evaluate(() => {
+      console.log(reviews_result.toString(), "reviews saved");
+      console.log(photomenu_result.toString(), "photo saved");
+    });
+
+    function formatResults() {}
   } catch (er) {
     console.log(er);
   }
