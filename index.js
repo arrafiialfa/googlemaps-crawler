@@ -95,13 +95,13 @@ async function getData() {
 
         const datastring = `${arr}`;
 
-        const [key, data] = datastring.split("'");
+        const [key, data] = datastring.split(")]}'");
 
         const obj = JSON.parse(data);
 
         const photosarr = obj[0];
 
-        fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
+        // fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
 
         photosarr.forEach((photo) => {
           photomenu_result.push(photo[6][0]); //photo menu url
@@ -136,13 +136,12 @@ async function getData() {
 
         const datastring = `${arr}`;
 
-        const [key, data] = datastring.split("'");
+        const [key, data] = datastring.split(")]}'");
 
+        fs.writeFileSync(`crawl_data/reviews_timestamp_${Date.now()}`, data);
         const obj = JSON.parse(data);
 
         const reviewsarr = obj[2];
-
-        fs.writeFileSync(`crawl_data/reviews_timestamp_${Date.now()}`, data);
 
         reviewsarr.forEach((review) => {
           reviews_result.push(review);
@@ -159,13 +158,19 @@ async function getData() {
 
     await autoScroll(page2, divToScrollSelector);
 
-    fs.writeFileSync(`crawl_data/photos`, photomenu_result);
-    fs.writeFileSync(`crawl_data/reviews`, reviews_result);
+    console.log(photomenu_result);
+    console.log(reviews_result);
 
-    page2.evaluate(() => {
-      console.log(reviews_result.toString(), "reviews saved");
-      console.log(photomenu_result.toString(), "photo saved");
-    });
+    fs.writeFileSync(`crawl_data/photos`, photomenu_result.toString());
+    fs.writeFileSync(`crawl_data/reviews`, reviews_result.toString());
+
+    page2.evaluate(
+      ({ reviews_result, photomenu_result }) => {
+        console.log(reviews_result, "reviews saved");
+        console.log(photomenu_result, "photo saved");
+      },
+      { photomenu_result, reviews_result }
+    );
 
     function formatResults() {}
   } catch (er) {
