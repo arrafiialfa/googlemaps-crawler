@@ -30,31 +30,43 @@ async function startApp() {
 startApp();
 
 //auto scroll
-async function autoScroll(page, selector) {
+async function autoScroll(page, selector, interval, timeout) {
   await page.waitForSelector(selector);
 
-  await page.evaluate((div) => {
-    const element = document.querySelector(div);
-    return new Promise((resolve, reject) => {
-      const distance = 300;
-      const timer = setInterval(() => {
-        element.scrollBy(0, distance);
-      }, 300);
-      setTimeout(() => {
-        clearInterval(timer);
-        resolve();
-      }, 15000);
-    });
-  }, selector);
+  await page.evaluate(
+    ({ selector, interval, timeout }) => {
+      const element = document.querySelector(selector);
+      return new Promise((resolve, reject) => {
+        const distance = 300;
+        const timer = setInterval(() => {
+          element.scrollBy(0, distance);
+        }, interval);
+        setTimeout(() => {
+          clearInterval(timer);
+          resolve();
+        }, timeout);
+      });
+    },
+    { selector, interval, timeout }
+  );
 }
 
+async function navigateToPlaceInfo(page, selector) {
+  await page.waitForSelector(selector, { Visible: true });
+
+  //click place info
+  await page.$$eval(selector, (elements) => {
+    elements.map((element, i) => {
+      element.click();
+    });
+  });
+}
 async function navigateToPhotoMenu(page, selector) {
   await page.waitForSelector(selector, { Visible: true });
 
   //click the photo
   await page.$$eval(selector, (elements) => {
     elements.map((element, i) => {
-      console.log(element.innerHTML, "map");
       if (
         element.innerHTML.toLowerCase() === "menu" ||
         element.innerHTML.toLowerCase() === "makanan &amp; minuman" ||
@@ -83,9 +95,28 @@ async function getData() {
 
   const reviews_result = [];
   const photomenu_result = [];
+  const mainDivToScrollSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf";
+  const divToScrollSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
 
   try {
-    await page.goto(url);
+    //response listener
+    page.on("response", async (res) => {
+      const string = "place?authuser";
+      if (res.url().indexOf(string) > 0) {
+        console.log("place payload captured");
+        const arr = await res.text();
+
+        const datastring = `${arr}`;
+
+        const [key, data] = datastring.split(")]}'");
+
+        fs.writeFileSync(`crawl_data/place_timestamp_${Date.now()}`, data);
+
+        const obj = JSON.parse(data);
+      }
+    });
 
     page.on("response", async (res) => {
       const string = "photo?authuser";
@@ -110,28 +141,10 @@ async function getData() {
       }
     });
 
-    const photoMenuSelector =
-      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div:nth-child(20) > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
-
-    console.log("navigating to photo menus");
-    await navigateToPhotoMenu(page, photoMenuSelector);
-
-    const divToScrollSelector =
-      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
-
-    await autoScroll(page, divToScrollSelector);
-
-    page.evaluate((photomenu_result) => {
-      console.log(photomenu_result);
-    }, photomenu_result);
-
-    const page2 = await browser.newPage();
-    await page2.goto(url);
-
-    page2.on("response", async (res) => {
+    page.on("response", async (res) => {
       const string = "listentitiesreviews";
       if (res.url().indexOf(string) > 0) {
-        console.log("data captured");
+        console.log("payload captured");
         const arr = await res.text();
 
         const datastring = `${arr}`;
@@ -150,29 +163,48 @@ async function getData() {
       }
     });
 
+    //goto main page and scroll
+
+    await page.goto(url);
+
+    const placeInfoSelector =
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.y0K5Df > button";
+
+    await navigateToPlaceInfo(page, placeInfoSelector);
+    await autoScroll(page, divToScrollSelector, 300, 5000);
+
+    //goto main page then navigate to food/services menus then scroll
+    await page.goto(url);
+    console.log("navigating to photo menus");
+    const photoMenuSelector =
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div:nth-child(20) > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+
+    await navigateToPhotoMenu(page, photoMenuSelector);
+    await autoScroll(page, divToScrollSelector, 300, 15000);
+
+    //goto main page then go to more reviews page
+    await page.goto(url);
+
+    console.log("navigating to more reviews page");
+
     const moreReviewsSelector = "button.M77dve";
     const xpath = "//button[contains(., 'Ulasan lainnya')]";
 
-    console.log("navigating to more reviews page");
-    await navigateToMoreReviews(page2, moreReviewsSelector, xpath);
+    await navigateToMoreReviews(page, moreReviewsSelector, xpath);
+    await autoScroll(page, divToScrollSelector, 300, 15000);
 
-    await autoScroll(page2, divToScrollSelector);
-
-    console.log(photomenu_result);
-    console.log(reviews_result);
-
+    //write data to fs
     fs.writeFileSync(`crawl_data/photos`, photomenu_result.toString());
     fs.writeFileSync(`crawl_data/reviews`, reviews_result.toString());
 
-    page2.evaluate(
+    //debugging
+    page.evaluate(
       ({ reviews_result, photomenu_result }) => {
         console.log(reviews_result, "reviews saved");
         console.log(photomenu_result, "photo saved");
       },
       { photomenu_result, reviews_result }
     );
-
-    function formatResults() {}
   } catch (er) {
     console.log(er);
   }

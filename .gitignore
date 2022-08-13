@@ -130,4 +130,4 @@ dist
 .pnp.*
 
 
-crawl_data/
+crawl_data/*
