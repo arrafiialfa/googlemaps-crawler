@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
+const helper = require("./app/lib/helper");
 
 /**
  * @type {puppeteer.Browser}
@@ -16,7 +17,7 @@ async function startApp() {
     try {
       browser = await puppeteer.launch({
         headless: false,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+        args: ["--lang=en-UK", "--no-sandbox", "--disable-dev-shm-usage"],
       });
 
       getData();
@@ -29,74 +30,17 @@ async function startApp() {
 
 startApp();
 
-//auto scroll
-async function autoScroll(page, selector, interval, timeout) {
-  await page.waitForSelector(selector);
-
-  await page.evaluate(
-    ({ selector, interval, timeout }) => {
-      const element = document.querySelector(selector);
-      return new Promise((resolve, reject) => {
-        const distance = 300;
-        const timer = setInterval(() => {
-          element.scrollBy(0, distance);
-        }, interval);
-        setTimeout(() => {
-          clearInterval(timer);
-          resolve();
-        }, timeout);
-      });
-    },
-    { selector, interval, timeout }
-  );
-}
-
-async function navigateToPlaceInfo(page, selector) {
-  await page.waitForSelector(selector, { Visible: true });
-
-  //click place info
-  await page.$$eval(selector, (elements) => {
-    elements.map((element, i) => {
-      element.click();
-    });
-  });
-}
-async function navigateToPhotoMenu(page, selector) {
-  await page.waitForSelector(selector, { Visible: true });
-
-  //click the photo
-  await page.$$eval(selector, (elements) => {
-    elements.map((element, i) => {
-      if (
-        element.innerHTML.toLowerCase() === "menu" ||
-        element.innerHTML.toLowerCase() === "makanan &amp; minuman" ||
-        element.innerHTML.toLowerCase() === "food & drink"
-      ) {
-        element.click();
-      }
-    });
-  });
-}
-
-async function navigateToMoreReviews(page, selector, xpath) {
-  await page.waitForSelector(selector, { Visible: true });
-  const [button] = await page.$x(xpath);
-
-  await button.evaluate((b) => {
-    b.click();
-  });
-}
-
 async function getData() {
   page = await browser.newPage();
 
-  const place_id = "ChIJp4JiUCNP0xQR1JaSjpW_Hms";
+  page.$$eval;
+
+  const place_id = "ChIJ59zXozr0aS4R4FbPZXtOnBY";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
   const reviews_result = [];
   const photomenu_result = [];
-  const mainDivToScrollSelector =
-    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf";
+
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
 
@@ -170,28 +114,47 @@ async function getData() {
     const placeInfoSelector =
       "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.y0K5Df > button";
 
-    await navigateToPlaceInfo(page, placeInfoSelector);
-    await autoScroll(page, divToScrollSelector, 300, 5000);
+    await helper.clickSelectorAndScroll(page, placeInfoSelector, null, {
+      divToScrollSelector: divToScrollSelector,
+      interval: 300,
+      timeout: 5000,
+    });
 
     //goto main page then navigate to food/services menus then scroll
     await page.goto(url);
     console.log("navigating to photo menus");
     const photoMenuSelector =
-      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div:nth-child(20) > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
 
-    await navigateToPhotoMenu(page, photoMenuSelector);
-    await autoScroll(page, divToScrollSelector, 300, 15000);
+    await helper.clickSelectorAndScroll(
+      page,
+      photoMenuSelector,
+      ["menu", "makanan &amp; minuman", "food &amp; drink"],
+      {
+        divToScrollSelector: divToScrollSelector,
+        interval: 300,
+        timeout: 15000,
+      }
+    );
 
     //goto main page then go to more reviews page
     await page.goto(url);
 
     console.log("navigating to more reviews page");
 
-    const moreReviewsSelector = "button.M77dve";
-    const xpath = "//button[contains(., 'Ulasan lainnya')]";
+    const moreReviewsSelector =
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div > button > span > span";
 
-    await navigateToMoreReviews(page, moreReviewsSelector, xpath);
-    await autoScroll(page, divToScrollSelector, 300, 15000);
+    await helper.clickSelectorAndScroll(
+      page,
+      moreReviewsSelector,
+      ["more reviews", "ulasan lainnya"],
+      {
+        divToScrollSelector: divToScrollSelector,
+        interval: 300,
+        timeout: 15000,
+      }
+    );
 
     //write data to fs
     fs.writeFileSync(`crawl_data/photos`, photomenu_result.toString());
