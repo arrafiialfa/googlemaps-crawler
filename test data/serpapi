@@ -1,13 +1,8 @@
 {
-  "address": "Jl. KH Wahid Hasyim No.31c, RW.8, Kb. Sirih, Kec. Menteng, Kota Jakarta Pusat, Daerah Khusus Ibukota Jakarta 10340, Indonesia",
-  "createdAt": {
-    "$date": {
-      "$numberLong": "1659689596234"
-    }
-  },
-  "data_cid": "1629263457097307872",
-  "data_id": "0x2e69f43aa3d7dce7:0x169c4e7b65cf56e0",
-  "description": "Cozy hangout for coffee & light eats. Mellow neighborhood cafe serving inventive coffee drinks & light fare in a pared-down setting.",
+  "address": "[6][2]",
+  "data_cid": "[6][37][0][0][29][1]",
+  "data_id": "[6][10]",
+  "description": "[6][32][0][1]+[6][32][1][1]",
   "gps_coordinates": {
     "latitude": -6.1867206,
     "longitude": 106.8309882

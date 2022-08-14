@@ -35,7 +35,8 @@ async function getData() {
 
   page.$$eval;
 
-  const place_id = "ChIJ59zXozr0aS4R4FbPZXtOnBY";
+  const place_id = "ChIJF2dBfDn0aS4RAg02EhAYsB4";
+  // const place_id = "ChIJh45PEwX0aS4R-jjr_KsRRUc";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
   const reviews_result = [];
@@ -75,6 +76,8 @@ async function getData() {
         const obj = JSON.parse(data);
 
         const photosarr = obj[0];
+
+        console.log(photosarr);
 
         // fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
 
@@ -129,7 +132,7 @@ async function getData() {
     await helper.clickSelectorAndScroll(
       page,
       photoMenuSelector,
-      ["menu", "makanan &amp; minuman", "food &amp; drink"],
+      ["menu", "makanan &amp; minuman", "food &amp; drink", "all", "semua"],
       {
         divToScrollSelector: divToScrollSelector,
         interval: 300,

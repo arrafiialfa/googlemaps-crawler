@@ -49,26 +49,31 @@ exports.clickSelectorAndScroll = async (
   queries,
   { divToScrollSelector, interval, timeout }
 ) => {
-  await page.waitForSelector(selector, { Visible: true });
+  try {
+    await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
 
-  //click more reviews
-  await page.$$eval(
-    selector,
-    (elements, queries) => {
-      elements.map((element, i) => {
-        if (queries) {
-          queries.map((query) => {
-            if (new RegExp(query).test(element.innerHTML.toLowerCase())) {
-              element.click();
-            }
-          });
-        } else {
-          element.click();
-        }
-      });
-    },
-    queries
-  );
+    //click more reviews
+    await page.$$eval(
+      selector,
+      (elements, queries) => {
+        elements.map((element, i) => {
+          if (queries) {
+            queries.map((query) => {
+              if (new RegExp(query).test(element.innerHTML.toLowerCase())) {
+                element.click();
+              }
+            });
+          } else {
+            element.click();
+          }
+        });
+      },
+      queries
+    );
 
-  await this.autoScroll(page, divToScrollSelector, interval, timeout);
+    await this.autoScroll(page, divToScrollSelector, interval, timeout);
+  } catch (err) {
+    console.error(err);
+    return;
+  }
 };
