@@ -6,8 +6,7 @@ mongoose.Promise = global.Promise;
 const db = {};
 db.mongoose = mongoose;
 db.url = process.env.MONGODB_URL;
-db.google_places = require("./google_places.js")(mongoose);
-db.serp_maps = require("./serp_maps.js")(mongoose);
+db.gmaps_crawled_data = require("./googlemaps_crawled.js")(mongoose);
 
 mongoose.set("debug", true);
 module.exports = db;

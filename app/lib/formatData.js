@@ -1,15 +1,9 @@
-exports.formatPlaceData = async (data) => {
+exports.formatPlaceData = (data) => {
   const document = {
     address: data[6][2] || "",
     data_cid: data[6][37][0][0][29][1] || "",
     data_id: data[6][10] || "",
-    description: data[6][32]
-      ? `${data[6][32]
-          .map((data) => {
-            return data[1];
-          })
-          .join(",")}`
-      : "",
+    description: data[6][32] || [],
     gps_coordinates: data[6][9]
       ? {
           latitude: data[6][9][2],
@@ -31,14 +25,10 @@ exports.formatPlaceData = async (data) => {
           }
         : {},
     phone: data[6][178] ? data[6][178][0][1][1][0] : "",
-    photos_link: "serpapiurl",
     place_id: data[6][78] || "",
-    place_id_search: "serpapiurl",
-    position: -100,
     price: data[6][4] ? data[6][4][10] : "",
     rating: data[6][4] ? data[6][4][7] : "",
     reviews: [],
-    reviews_link: "serpapiurl",
     service_options:
       data[6][100] && data[6][100] && data[6][100][1] && data[6][100][1][0]
         ? {
@@ -46,10 +36,11 @@ exports.formatPlaceData = async (data) => {
             options: data[6][100][1][0][2],
           }
         : {},
-    thumbnail: "serpapi",
     title: data[6][11] || "",
-    type: data[6][13] ? `${data[6][13].map((str) => str).join(",")}` : "",
-    photos: [],
+    type: data[6][13] || [],
+    photos: {
+      food: [],
+    },
     popular_times: data[6][84] ? data[6][84][0] : [],
   };
 

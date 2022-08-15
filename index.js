@@ -2,6 +2,8 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 const helper = require("./app/lib/helper");
 const formatData = require("./app/lib/formatData");
+const db = require("./app/models");
+const Mongoose = require("./app/controller/MongooseController");
 
 /**
  * @type {puppeteer.Browser}
@@ -29,21 +31,30 @@ async function startApp() {
   }
 }
 
+db.mongoose
+  .connect(db.url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Connected to the database!");
+  })
+  .catch((err) => {
+    console.log("Cannot connect to the database!", err);
+    process.exit();
+  });
+
 startApp();
 
 async function getData() {
   page = await browser.newPage();
 
-  page.$$eval;
-
   const place_id = "ChIJ59zXozr0aS4R4FbPZXtOnBY";
-  // const place_id = "ChIJF2dBfDn0aS4RAg02EhAYsB4";
-  // const place_id = "ChIJh45PEwX0aS4R-jjr_KsRRUc";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
   const reviews_result = [];
   const photomenu_result = [];
-  let place_data;
+  let place_data = null;
 
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
@@ -173,17 +184,31 @@ async function getData() {
       }
     );
 
-    //write data to fs
-    fs.writeFileSync(`crawl_data/photos`, photomenu_result.toString());
-    fs.writeFileSync(`crawl_data/reviews`, reviews_result.toString());
+    if (place_data) {
+      place_data.photo = {
+        food: photomenu_result,
+      };
+      place_data.reviews = reviews_result;
+
+      Mongoose.create(place_data)
+        .then((response) => {
+          console.log("data is sucessfully saved to database", response);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else {
+      console.error("place request not captured");
+    }
 
     //debugging
     page.evaluate(
-      ({ reviews_result, photomenu_result }) => {
+      ({ reviews_result, photomenu_result, place_data }) => {
         console.log(reviews_result, "reviews saved");
         console.log(photomenu_result, "photo saved");
+        console.log(place_data, "placedata saved");
       },
-      { photomenu_result, reviews_result }
+      { photomenu_result, reviews_result, place_data }
     );
   } catch (er) {
     console.log(er);

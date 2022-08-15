@@ -1,14 +1,14 @@
 module.exports = (mongoose) => {
-  const SerpPlaces = mongoose.model(
-    "serp_maps",
+  const GooglemapsCrawledData = mongoose.model(
+    "googlemaps_crawled_data",
     mongoose.Schema(
       {
         id: String,
-        address: String,
+        address: [],
         createdAt: {},
         data_cid: String,
         data_id: String,
-        description: String,
+        description: [],
         gps_coordinates: {},
         hours: String,
         open_state: String,
@@ -25,12 +25,13 @@ module.exports = (mongoose) => {
         service_options: {},
         thumbnail: String,
         title: String,
-        type: String,
+        type: [],
         updatedAt: {},
-        photos: [],
+        photos: {},
+        popular_times: [],
       },
       { timestamps: true }
     )
   );
-  return SerpPlaces;
+  return GooglemapsCrawledData;
 };
