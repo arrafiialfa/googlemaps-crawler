@@ -3,7 +3,9 @@ const fs = require("fs");
 const navigate = require("./app/lib/navigate");
 const formatData = require("./app/lib/formatData");
 const db = require("./app/models");
-const Mongoose = require("./app/controller/MongooseController");
+const GmapsCrawled = require("./app/controller/GmapsCrawled");
+const GooglePlaces = require("./app/controller/GooglePlaces");
+const { Console } = require("console");
 
 /**
  * @type {puppeteer.Browser}
@@ -14,8 +16,22 @@ let browser = null;
  */
 
 let page = null;
+let ids = null;
+let checkpoint = null;
+let i = 0;
 
 async function startApp() {
+  const arr = await GooglePlaces.findIds();
+  ids = arr.map((place) => place.place_id);
+
+  fs.writeFileSync(
+    `crawl_data/ids.json`,
+    `${ids.map((id) => id).join(", ")}`,
+    (err) => {
+      if (err) throw err;
+    }
+  );
+
   if (!browser) {
     try {
       browser = await puppeteer.launch({
@@ -23,7 +39,9 @@ async function startApp() {
         args: ["--lang=en-UK", "--no-sandbox", "--disable-dev-shm-usage"],
       });
 
-      getData();
+      page = await browser.newPage();
+
+      getData(page, ids[0]);
     } catch (error) {
       console.log(error, "Retrying");
       startApp();
@@ -46,10 +64,18 @@ db.mongoose
 
 startApp();
 
-async function getData() {
-  page = await browser.newPage();
+async function getData(page, place_id) {
+  console.log(i, "i", ids[i]);
+  checkpoint = place_id;
 
-  const place_id = "ChIJ7SN9VxX0aS4RG1kcAMetBMA";
+  fs.writeFile(`crawl_data/checkpoint.json`, place_id, (err) => {
+    if (err) {
+      console.error("error saving checkpoint", err);
+    }
+
+    console.log("checkpoint saved");
+  });
+
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
   let reviews_result = [];
@@ -59,76 +85,66 @@ async function getData() {
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
 
+  //response listener
+  page.on("response", async (res) => {
+    const string = "place?authuser";
+    if (res.url().indexOf(string) > 0) {
+      console.log("place payload captured");
+      const arr = await res.text();
+
+      const datastring = `${arr}`;
+
+      const [key, data] = datastring.split(")]}'");
+
+      const obj = JSON.parse(data);
+
+      place_data = formatData.formatPlaceData(obj);
+    }
+  });
+
+  page.on("response", async (res) => {
+    const string = "photo?authuser";
+    if (res.url().indexOf(string) > 0) {
+      console.log("payload captured");
+      const arr = await res.text();
+
+      const datastring = `${arr}`;
+
+      const [key, data] = datastring.split(")]}'");
+
+      const obj = JSON.parse(data);
+
+      const photosarr = obj[0];
+
+      photosarr.map((photo) => {
+        photomenu_result.push(
+          photo[6][0] //photo menu url
+        );
+      });
+    }
+  });
+
+  page.on("response", async (res) => {
+    const string = "listentitiesreviews";
+    if (res.url().indexOf(string) > 0) {
+      console.log("payload captured");
+      const arr = await res.text();
+
+      const datastring = `${arr}`;
+
+      const [key, data] = datastring.split(")]}'");
+
+      const obj = JSON.parse(data);
+
+      const reviewsarr = obj[2];
+
+      reviewsarr.map((review) => {
+        reviews_result.push(formatData.formatReview(review));
+      });
+    }
+  });
+
   try {
-    //response listener
-    page.on("response", async (res) => {
-      const string = "place?authuser";
-      if (res.url().indexOf(string) > 0) {
-        console.log("place payload captured");
-        const arr = await res.text();
-
-        const datastring = `${arr}`;
-
-        const [key, data] = datastring.split(")]}'");
-
-        fs.writeFileSync(`crawl_data/place_timestamp_${Date.now()}`, data);
-        console.log("place data saaved");
-
-        const obj = JSON.parse(data);
-
-        place_data = formatData.formatPlaceData(obj);
-        console.log(place_data);
-      }
-    });
-
-    page.on("response", async (res) => {
-      const string = "photo?authuser";
-      if (res.url().indexOf(string) > 0) {
-        console.log("payload captured");
-        const arr = await res.text();
-
-        const datastring = `${arr}`;
-
-        const [key, data] = datastring.split(")]}'");
-
-        const obj = JSON.parse(data);
-
-        const photosarr = obj[0];
-
-        fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
-        console.log("photo saved");
-
-        photosarr.map((photo) => {
-          photomenu_result.push(
-            photo[6][0] //photo menu url
-          );
-        });
-      }
-    });
-
-    page.on("response", async (res) => {
-      const string = "listentitiesreviews";
-      if (res.url().indexOf(string) > 0) {
-        console.log("payload captured");
-        const arr = await res.text();
-
-        const datastring = `${arr}`;
-
-        const [key, data] = datastring.split(")]}'");
-
-        fs.writeFileSync(`crawl_data/reviews_timestamp_${Date.now()}`, data);
-        console.log("reviews saved");
-
-        const obj = JSON.parse(data);
-
-        const reviewsarr = obj[2];
-
-        reviewsarr.map((review) => {
-          reviews_result.push(formatData.formatReview(review));
-        });
-      }
-    });
-
     //goto main page then go to place info then scroll
 
     await page.goto(url);
@@ -162,8 +178,8 @@ async function getData() {
       ],
       {
         divToScrollSelector: divToScrollSelector,
-        interval: 300,
-        timeout: 15000,
+        interval: 150,
+        timeout: 7000,
       }
     );
 
@@ -192,7 +208,7 @@ async function getData() {
       };
       place_data.reviews = reviews_result;
 
-      Mongoose.create(place_data)
+      GmapsCrawled.create(place_data)
         .then((response) => {
           console.log("data is sucessfully saved to database", response);
         })
@@ -203,16 +219,16 @@ async function getData() {
       console.error("place request not captured");
     }
 
-    //debugging
-    page.evaluate(
-      ({ reviews_result, photomenu_result, place_data }) => {
-        console.log(reviews_result, "reviews saved");
-        console.log(photomenu_result, "photo saved");
-        console.log(place_data, "placedata saved");
-      },
-      { photomenu_result, reviews_result, place_data }
-    );
-  } catch (er) {
-    console.log(er);
+    return;
+  } catch (err) {
+    console.log(err);
+    return;
+  } finally {
+    if (i === ids.length - 1) {
+      return;
+    } else {
+      i++;
+      getData(page, ids[i]);
+    }
   }
 }

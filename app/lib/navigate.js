@@ -73,7 +73,6 @@ exports.clickSelectorAndScroll = async (
 
     await this.autoScroll(page, divToScrollSelector, interval, timeout);
   } catch (err) {
-    console.error(err);
-    return;
+    throw err;
   }
 };
