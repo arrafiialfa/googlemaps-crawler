@@ -1,6 +1,7 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const helper = require("./app/lib/helper");
+const formatData = require("./app/lib/formatData");
 
 /**
  * @type {puppeteer.Browser}
@@ -35,12 +36,14 @@ async function getData() {
 
   page.$$eval;
 
-  const place_id = "ChIJF2dBfDn0aS4RAg02EhAYsB4";
+  const place_id = "ChIJ59zXozr0aS4R4FbPZXtOnBY";
+  // const place_id = "ChIJF2dBfDn0aS4RAg02EhAYsB4";
   // const place_id = "ChIJh45PEwX0aS4R-jjr_KsRRUc";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
   const reviews_result = [];
   const photomenu_result = [];
+  let place_data;
 
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
@@ -58,8 +61,12 @@ async function getData() {
         const [key, data] = datastring.split(")]}'");
 
         fs.writeFileSync(`crawl_data/place_timestamp_${Date.now()}`, data);
+        console.log("place data saaved");
 
         const obj = JSON.parse(data);
+
+        place_data = formatData.formatPlaceData(obj);
+        console.log(place_data);
       }
     });
 
@@ -77,13 +84,11 @@ async function getData() {
 
         const photosarr = obj[0];
 
-        console.log(photosarr);
-
-        // fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
+        fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
+        console.log("photo saved");
 
         photosarr.forEach((photo) => {
           photomenu_result.push(photo[6][0]); //photo menu url
-          console.log("photo saved");
         });
       }
     });
@@ -99,13 +104,14 @@ async function getData() {
         const [key, data] = datastring.split(")]}'");
 
         fs.writeFileSync(`crawl_data/reviews_timestamp_${Date.now()}`, data);
+        console.log("reviews saved");
+
         const obj = JSON.parse(data);
 
         const reviewsarr = obj[2];
 
         reviewsarr.forEach((review) => {
           reviews_result.push(review);
-          console.log("reviews saved");
         });
       }
     });
