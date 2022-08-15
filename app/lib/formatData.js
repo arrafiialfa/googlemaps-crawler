@@ -1,3 +1,50 @@
+function numToDay(num) {
+  switch (num) {
+    case 1:
+      return "monday";
+    case 2:
+      return "tuesday";
+    case 3:
+      return "wednesday";
+    case 4:
+      return "thursday";
+    case 5:
+      return "friday";
+    case 6:
+      return "saturday";
+    case 7:
+      return "sunday";
+
+    default:
+      break;
+  }
+}
+
+exports.formatReview = (review) => {
+  try {
+    const doc = {
+      reviewer: review[0]
+        ? {
+            profile_link: review[0][0],
+            name: review[0][1],
+            profile_photo: review[0][2],
+            total_reviews: review[12][1][1],
+            level: review[12][1][0] ? review[12][1][0][0] : "",
+            description: review[12][1][12][0] ? review[12][1][12][0] : "",
+          }
+        : {},
+
+      timeDiff: review[1],
+      text: review[3],
+      rating: review[4],
+    };
+
+    return doc;
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 exports.formatPlaceData = (data) => {
   const document = {
     address: data[6][2] || "",
@@ -41,7 +88,25 @@ exports.formatPlaceData = (data) => {
     photos: {
       food: [],
     },
-    popular_times: data[6][84] ? data[6][84][0] : [],
+    popular_times:
+      data[6][84] && data[6][84][0]
+        ? data[6][84][0].map((day) => {
+            return {
+              day: numToDay(day[0]),
+              chart: day[1]
+                ? day[1].map((time) => {
+                    return {
+                      time: time[0],
+                      intensity: time[1],
+                      description: time[2],
+                      label: time[4],
+                      alt_label: time[6],
+                    };
+                  })
+                : null,
+            };
+          })
+        : [],
   };
 
   return document;

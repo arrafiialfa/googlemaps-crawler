@@ -52,8 +52,8 @@ async function getData() {
   const place_id = "ChIJ59zXozr0aS4R4FbPZXtOnBY";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
-  const reviews_result = [];
-  const photomenu_result = [];
+  let reviews_result = null;
+  let photomenu_result = null;
   let place_data = null;
 
   const divToScrollSelector =
@@ -98,8 +98,8 @@ async function getData() {
         fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
         console.log("photo saved");
 
-        photosarr.forEach((photo) => {
-          photomenu_result.push(photo[6][0]); //photo menu url
+        photomenu_result = photosarr.map((photo) => {
+          return photo[6][0]; //photo menu url
         });
       }
     });
@@ -121,8 +121,8 @@ async function getData() {
 
         const reviewsarr = obj[2];
 
-        reviewsarr.forEach((review) => {
-          reviews_result.push(review);
+        reviews_result = reviewsarr.map((review) => {
+          return formatData.formatReview(review);
         });
       }
     });
