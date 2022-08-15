@@ -185,8 +185,8 @@ async function getData() {
     );
 
     if (place_data) {
-      place_data.photo = {
-        food: photomenu_result,
+      place_data.photos = {
+        food: [...photomenu_result],
       };
       place_data.reviews = reviews_result;
 
