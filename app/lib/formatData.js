@@ -48,6 +48,7 @@ exports.formatReview = (review) => {
 exports.formatPlaceData = (data) => {
   const document = {
     address: data[6][2] || "",
+    website: data[6][7] ? data[6][7][1] : "",
     data_cid: data[6][37][0][0][29][1] || "",
     data_id: data[6][10] || "",
     description: data[6][32] || [],
@@ -74,7 +75,8 @@ exports.formatPlaceData = (data) => {
     phone: data[6][178] ? data[6][178][0][1][1][0] : "",
     place_id: data[6][78] || "",
     price: data[6][4] ? data[6][4][10] : "",
-    rating: data[6][4] ? data[6][4][7] : "",
+    rating: data[6][4] ? data[6][4][7] : null,
+    total_reviews: data[6][4] ? data[6][4][8] : null,
     reviews: [],
     service_options:
       data[6][100] && data[6][100] && data[6][100][1] && data[6][100][1][0]

@@ -1,6 +1,6 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
-const helper = require("./app/lib/helper");
+const navigate = require("./app/lib/navigate");
 const formatData = require("./app/lib/formatData");
 const db = require("./app/models");
 const Mongoose = require("./app/controller/MongooseController");
@@ -49,11 +49,11 @@ startApp();
 async function getData() {
   page = await browser.newPage();
 
-  const place_id = "ChIJ59zXozr0aS4R4FbPZXtOnBY";
+  const place_id = "ChIJ7SN9VxX0aS4RG1kcAMetBMA";
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
-  let reviews_result = null;
-  let photomenu_result = null;
+  let reviews_result = [];
+  let photomenu_result = [];
   let place_data = null;
 
   const divToScrollSelector =
@@ -98,8 +98,10 @@ async function getData() {
         fs.writeFileSync(`crawl_data/photos_timestamp_${Date.now()}`, data);
         console.log("photo saved");
 
-        photomenu_result = photosarr.map((photo) => {
-          return photo[6][0]; //photo menu url
+        photosarr.map((photo) => {
+          photomenu_result.push(
+            photo[6][0] //photo menu url
+          );
         });
       }
     });
@@ -121,23 +123,23 @@ async function getData() {
 
         const reviewsarr = obj[2];
 
-        reviews_result = reviewsarr.map((review) => {
-          return formatData.formatReview(review);
+        reviewsarr.map((review) => {
+          reviews_result.push(formatData.formatReview(review));
         });
       }
     });
 
-    //goto main page and scroll
+    //goto main page then go to place info then scroll
 
     await page.goto(url);
 
     const placeInfoSelector =
       "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.y0K5Df > button";
 
-    await helper.clickSelectorAndScroll(page, placeInfoSelector, null, {
+    await navigate.clickSelectorAndScroll(page, placeInfoSelector, null, {
       divToScrollSelector: divToScrollSelector,
       interval: 300,
-      timeout: 5000,
+      timeout: 1000,
     });
 
     //goto main page then navigate to food/services menus then scroll
@@ -146,7 +148,7 @@ async function getData() {
     const photoMenuSelector =
       "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
 
-    await helper.clickSelectorAndScroll(
+    await navigate.clickSelectorAndScroll(
       page,
       photoMenuSelector,
       [
@@ -173,13 +175,13 @@ async function getData() {
     const moreReviewsSelector =
       "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div > button > span > span";
 
-    await helper.clickSelectorAndScroll(
+    await navigate.clickSelectorAndScroll(
       page,
       moreReviewsSelector,
       ["more reviews", "ulasan lainnya"],
       {
         divToScrollSelector: divToScrollSelector,
-        interval: 300,
+        interval: 150,
         timeout: 15000,
       }
     );

@@ -1,7 +1,3 @@
-const express = require("express");
-const app = express();
-const path = require("path");
-const fs = require("fs");
 const db = require("../models");
 const GmapsCrawledData = db.gmaps_crawled_data;
 

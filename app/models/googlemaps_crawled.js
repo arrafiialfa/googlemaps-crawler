@@ -5,6 +5,7 @@ module.exports = (mongoose) => {
       {
         id: String,
         address: [],
+        website: String,
         createdAt: {},
         data_cid: String,
         data_id: String,
@@ -20,6 +21,7 @@ module.exports = (mongoose) => {
         position: Number,
         price: String,
         rating: Number,
+        total_reviews: Number,
         reviews: [],
         reviews_link: String,
         service_options: {},
