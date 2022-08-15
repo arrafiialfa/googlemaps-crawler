@@ -132,7 +132,15 @@ async function getData() {
     await helper.clickSelectorAndScroll(
       page,
       photoMenuSelector,
-      ["menu", "makanan &amp; minuman", "food &amp; drink", "all", "semua"],
+      [
+        "menu",
+        "food",
+        "drink",
+        "makanan &amp; minuman",
+        "food &amp; drink",
+        "all",
+        "semua",
+      ],
       {
         divToScrollSelector: divToScrollSelector,
         interval: 300,
