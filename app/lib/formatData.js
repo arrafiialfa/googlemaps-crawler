@@ -23,16 +23,17 @@ function numToDay(num) {
 exports.formatReview = (review) => {
   try {
     const doc = {
-      reviewer: review[0]
-        ? {
-            profile_link: review[0][0],
-            name: review[0][1],
-            profile_photo: review[0][2],
-            total_reviews: review[12][1][1],
-            level: review[12][1][0] ? review[12][1][0][0] : "",
-            description: review[12][1][12][0] ? review[12][1][12][0] : "",
-          }
-        : {},
+      reviewer:
+        review[0] == null || review[0] == undefined
+          ? {
+              profile_link: review[0][0],
+              name: review[0][1],
+              profile_photo: review[0][2],
+              total_reviews: review[12][1][1],
+              level: review[12][1][0] ? review[12][1][0][0] : "",
+              description: review[12][1][12][0] ? review[12][1][12][0] : "",
+            }
+          : {},
 
       timeDiff: review[1],
       text: review[3],

@@ -1,11 +1,10 @@
-const db = require("../models");
-const GmapsCrawledData = db.gmaps_crawled_data;
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 const navigate = require("../lib/navigate");
 const formatData = require("../lib/formatData");
 const GooglePlaces = require("./GooglePlaces");
+const GmapsCrawled = require("./GmapsCrawledData");
 
 /**
  * @type {puppeteer.Browser}
@@ -18,21 +17,14 @@ let browser = null;
 let page = null;
 let ids = null;
 let i = 0;
-let photoMenuFound = false;
 
 exports.startApp = async (request, response) => {
   const arr = await GooglePlaces.findIds(request.query);
   ids = arr.map((place) => place.place_id);
 
-  fs.writeFile(
+  fs.writeFileSync(
     `${path.resolve(__dirname)}../../../crawl_data/idstocrawl.json`,
-    `[${ids.map((id) => `"${id}"`).join(",")}]`,
-    (err) => {
-      if (err) {
-        console.error("error saving ids", err);
-      }
-      console.log("ids saved");
-    }
+    `[${ids.map((id) => `"${id}"`).join(",")}]`
   );
 
   if (!browser) {
@@ -58,15 +50,9 @@ exports.startApp = async (request, response) => {
 async function getData(page, place_id) {
   console.log(i, "currently at", ids[i]);
 
-  fs.writeFile(
+  fs.writeFileSync(
     `${path.resolve(__dirname)}../../../crawl_data/checkpoint.json`,
-    ` ["${place_id}_${i}"]`,
-    (err) => {
-      if (err) {
-        console.error("error saving checkpoint", err);
-      }
-      console.log("checkpoint saved");
-    }
+    ` ["${place_id}_${i}"]`
   );
 
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
@@ -74,6 +60,7 @@ async function getData(page, place_id) {
   let reviews_result = [];
   let photomenu_result = [];
   let place_data = null;
+  let photoMenuFound = false;
 
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
@@ -140,10 +127,11 @@ async function getData(page, place_id) {
   try {
     //crawl data exsist => return
     if (
-      await GmapsCrawledData.findOne({
+      await GmapsCrawled.findOne({
         place_id: place_id,
       })
     ) {
+      console.log(place_id, " exists");
       return;
     }
 
@@ -158,7 +146,15 @@ async function getData(page, place_id) {
       const isFound = await navigate.clickSelectorAndScroll(
         page,
         photoMenuSelector,
-        ["menu", "food", "drink", "makanan &amp; minuman", "food &amp; drink"],
+        [
+          "menu",
+          "food",
+          "drink",
+          "makanan &amp; minuman",
+          "food &amp; drink",
+          "coffee",
+          "kopi",
+        ],
         {
           divToScrollSelector: divToScrollSelector,
           interval: 150,
@@ -167,6 +163,7 @@ async function getData(page, place_id) {
       );
 
       if (!isFound) {
+        console.log("photo menu not found");
         await navigate.clickSelectorAndScroll(
           page,
           photoMenuSelector,
@@ -189,9 +186,8 @@ async function getData(page, place_id) {
     await page.goBack();
 
     console.log("navigating to more reviews page");
-
     const moreReviewsSelector =
-      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.TIHn2 > div.tAiQdd > div.lMbq3e > div.LBgpqf > div > div.fontBodyMedium.dmRWX > span:nth-child(3) > span > span:nth-child(1) > span.F7nice.mmu3tf > span:nth-child(1) > button";
+      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.TIHn2 > div.tAiQdd > div.lMbq3e > div.LBgpqf > div > div.fontBodyMedium.dmRWX > span > span > span > span.F7nice.mmu3tf > span > button";
 
     await navigate.clickSelectorAndScroll(
       page,
@@ -217,7 +213,7 @@ async function getData(page, place_id) {
 
       place_data.reviews = reviews_result;
 
-      create(place_data)
+      GmapsCrawled.create(place_data)
         .then((response) => {
           console.log("data is sucessfully saved to database", response);
         })
@@ -227,11 +223,30 @@ async function getData(page, place_id) {
     } else {
       console.error("place request not captured");
     }
-
-    return;
   } catch (err) {
-    console.log(err);
-    return;
+    console.error(err);
+
+    if (place_data) {
+      if (photoMenuFound) {
+        place_data.photos = {
+          food: [...photomenu_result],
+        };
+      } else {
+        place_data.photos = {
+          all: [...photomenu_result],
+        };
+      }
+
+      GmapsCrawled.create(place_data)
+        .then((response) => {
+          console.log("data is sucessfully saved to database", response);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else {
+      console.error("place request not captured");
+    }
   } finally {
     if (i === ids.length - 1) {
       console.log("Crawl is complete");
@@ -242,24 +257,3 @@ async function getData(page, place_id) {
     }
   }
 }
-
-const create = async (document) => {
-  // console.log(req.body);
-  try {
-    const data = await GmapsCrawledData.create(document);
-    const result = {
-      success: true,
-      message: "Create Data Success!",
-      data: data,
-    };
-    return result;
-  } catch (error) {
-    console.error(error);
-    const result = {
-      success: false,
-      message: "Create Data Failed!",
-      error: error,
-    };
-    return result;
-  }
-};

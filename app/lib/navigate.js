@@ -21,26 +21,41 @@ exports.autoScroll = async (page, selector, interval, timeout) => {
 };
 
 exports.clickSelector = async (page, selector, queries) => {
-  await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
+  try {
+    let found = false;
+    await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
 
-  //click more reviews
-  await page.$$eval(
-    selector,
-    (elements, queries) => {
-      elements.map((element, i) => {
-        if (queries) {
-          queries.map((query) => {
-            if (new RegExp(query).test(element.innerHTML.toLowerCase())) {
+    //click more reviews
+    found = await page.$$eval(
+      selector,
+      (elements, queries) => {
+        return new Promise((resolve, reject) => {
+          elements.map((element, i) => {
+            if (queries) {
+              queries.map((query) => {
+                if (new RegExp(query).test(element.innerHTML.toLowerCase())) {
+                  console.log("checked");
+                  element.click();
+                  resolve(true);
+                } else if (i + 1 === elements.length) {
+                  resolve(false);
+                }
+              });
+            } else {
               element.click();
+              resolve(true);
             }
           });
-        } else {
-          element.click();
-        }
-      });
-    },
-    queries
-  );
+        });
+      },
+      queries
+    );
+
+    return found;
+  } catch (err) {
+    console.error("selector not found");
+    throw err;
+  }
 };
 
 exports.clickSelectorAndScroll = async (
@@ -86,7 +101,7 @@ exports.clickSelectorAndScroll = async (
       return found;
     }
   } catch (err) {
-    console.error("error when navigating to selector");
+    console.error("selector not found");
     throw err;
   }
 };
