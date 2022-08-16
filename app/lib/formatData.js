@@ -25,15 +25,15 @@ exports.formatReview = (review) => {
     const doc = {
       reviewer:
         review[0] == null || review[0] == undefined
-          ? {
+          ? {}
+          : {
               profile_link: review[0][0],
               name: review[0][1],
               profile_photo: review[0][2],
               total_reviews: review[12][1][1],
               level: review[12][1][0] ? review[12][1][0][0] : "",
               description: review[12][1][12][0] ? review[12][1][12][0] : "",
-            }
-          : {},
+            },
 
       timeDiff: review[1],
       text: review[3],
@@ -42,7 +42,7 @@ exports.formatReview = (review) => {
 
     return doc;
   } catch (err) {
-    console.error(err);
+    console.error(err, "err formating reviews");
   }
 };
 
@@ -92,13 +92,22 @@ exports.formatPlaceData = (data) => {
       data[6][52] && data[6][52][0]
         ? data[6][52][0].map((review) => this.formatReview(review))
         : [],
-    service_options:
-      data[6][100] && data[6][100] && data[6][100][1] && data[6][100][1][0]
-        ? {
-            name: data[6][100][1][0][0],
-            options: data[6][100][1][0][2],
-          }
-        : {},
+    services:
+      data[6][100] && data[6][100][1]
+        ? data[6][100][1].map((detail) => {
+            return {
+              name: detail[0] || detail[1],
+              items: detail[2].map((item) => {
+                return {
+                  path: item[0],
+                  type: item[1],
+                  flag: item[2][2][0],
+                  descriptions: item[2][2],
+                };
+              }),
+            };
+          })
+        : [],
     title: data[6][11] || "",
     type: data[6][13] || [],
     photos: {
@@ -122,10 +131,6 @@ exports.formatPlaceData = (data) => {
                 : null,
             };
           })
-        : [],
-    labels:
-      data[6][25] && data[6][25][18]
-        ? data[6][25][18].map((label) => label[1])
         : [],
   };
 

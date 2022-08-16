@@ -24,7 +24,6 @@ module.exports = (mongoose) => {
         total_reviews: Number,
         reviews: [],
         reviews_link: String,
-        service_options: {},
         thumbnail: String,
         title: String,
         type: [],
@@ -32,7 +31,7 @@ module.exports = (mongoose) => {
         photos: {},
         popular_times: [],
         rating_summary: {},
-        labels: [],
+        services: [],
       },
       { timestamps: true }
     )

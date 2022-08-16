@@ -69,7 +69,6 @@ async function getData(page, place_id) {
   page.on("response", async (res) => {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
-      console.log("place payload captured");
       const arr = await res.text();
 
       const datastring = `${arr}`;
@@ -85,7 +84,6 @@ async function getData(page, place_id) {
   page.on("response", async (res) => {
     const string = "photo?authuser";
     if (res.url().indexOf(string) > 0) {
-      console.log("photo payload captured");
       const arr = await res.text();
 
       const datastring = `${arr}`;
@@ -107,7 +105,6 @@ async function getData(page, place_id) {
   page.on("response", async (res) => {
     const string = "listentitiesreviews";
     if (res.url().indexOf(string) > 0) {
-      console.log("reviews payload captured");
       const arr = await res.text();
 
       const datastring = `${arr}`;
