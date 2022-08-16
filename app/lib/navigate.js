@@ -1,6 +1,6 @@
 //auto scroll
 exports.autoScroll = async (page, selector, interval, timeout) => {
-  await page.waitForSelector(selector);
+  await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
 
   await page.evaluate(
     ({ selector, interval, timeout }) => {
@@ -21,7 +21,7 @@ exports.autoScroll = async (page, selector, interval, timeout) => {
 };
 
 exports.clickSelector = async (page, selector, queries) => {
-  await page.waitForSelector(selector, { Visible: true });
+  await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
 
   //click more reviews
   await page.$$eval(
@@ -50,7 +50,7 @@ exports.clickSelectorAndScroll = async (
   { divToScrollSelector, interval, timeout }
 ) => {
   try {
-    await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
+    await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
 
     //click more reviews
     await page.$$eval(

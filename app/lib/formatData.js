@@ -77,7 +77,20 @@ exports.formatPlaceData = (data) => {
     price: data[6][4] ? data[6][4][10] : "",
     rating: data[6][4] ? data[6][4][7] : null,
     total_reviews: data[6][4] ? data[6][4][8] : null,
-    reviews: [],
+    rating_summary:
+      data[6][52] && data[6][52][3]
+        ? {
+            five_stars: data[6][52][3][4],
+            four_stars: data[6][52][3][3],
+            three_stars: data[6][52][3][2],
+            two_stars: data[6][52][3][1],
+            one_stars: data[6][52][3][0],
+          }
+        : {},
+    reviews:
+      data[6][52] && data[6][52][0]
+        ? data[6][52][0].map((review) => this.formatReview(review))
+        : [],
     service_options:
       data[6][100] && data[6][100] && data[6][100][1] && data[6][100][1][0]
         ? {
@@ -108,6 +121,10 @@ exports.formatPlaceData = (data) => {
                 : null,
             };
           })
+        : [],
+    labels:
+      data[6][25] && data[6][25][18]
+        ? data[6][25][18].map((label) => label[1])
         : [],
   };
 

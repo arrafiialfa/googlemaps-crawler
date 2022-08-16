@@ -31,6 +31,8 @@ module.exports = (mongoose) => {
         updatedAt: {},
         photos: {},
         popular_times: [],
+        rating_summary: {},
+        labels: [],
       },
       { timestamps: true }
     )
