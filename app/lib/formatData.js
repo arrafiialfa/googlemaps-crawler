@@ -49,7 +49,7 @@ exports.formatPlaceData = (data) => {
   const document = {
     address: data[6][2] || "",
     website: data[6][7] ? data[6][7][1] : "",
-    data_cid: data[6][37][0][0][29][1] || "",
+    data_cid: data[6][37] ? data[6][37][0][0][29][1] : "",
     data_id: data[6][10] || "",
     description: data[6][32] || [],
     gps_coordinates: data[6][9]

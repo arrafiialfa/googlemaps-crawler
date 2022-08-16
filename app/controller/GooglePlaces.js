@@ -14,7 +14,7 @@ exports.findIds = async (query) => {
   };
 
   try {
-    const data = await GooglePlaces.find(query || {}, "place_id");
+    const data = await GooglePlaces.find({}, "place_id");
 
     return data;
   } catch (error) {
