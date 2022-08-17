@@ -34,7 +34,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         args: ["--lang=en-UK", "--no-sandbox", "--disable-dev-shm-usage"],
       });
       page = await browser.newPage();
@@ -233,7 +233,6 @@ async function getData(page, place_id) {
     await page.goBack();
 
     console.log("navigating to more reviews page");
-
     await navigate.clickSelectorAndScroll(
       page,
       moreReviewsSelector,
