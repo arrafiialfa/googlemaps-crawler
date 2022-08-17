@@ -16,7 +16,7 @@ let browser = null;
 
 let page = null;
 let ids = null;
-let i = 0;
+let i = 645;
 
 exports.startApp = async (request, response) => {
   const arr = await GooglePlaces.findIds(request.query);
@@ -69,55 +69,78 @@ async function getData(page, place_id) {
   page.on("response", async (res) => {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
-      const arr = await res.text();
+      console.log("place data captured");
+      try {
+        const arr = await res.text();
 
-      const datastring = `${arr}`;
+        const datastring = `${arr}`;
 
-      const [key, data] = datastring.split(")]}'");
+        const [key, data] = datastring.split(")]}'");
 
-      const obj = JSON.parse(data);
+        const obj = JSON.parse(data);
 
-      place_data = formatData.formatPlaceData(obj);
+        place_data = formatData.formatPlaceData(obj);
+      } catch (err) {
+        console.error(err, "error processing place data at response listener");
+      }
     }
   });
 
   page.on("response", async (res) => {
     const string = "photo?authuser";
     if (res.url().indexOf(string) > 0) {
-      const arr = await res.text();
+      try {
+        const arr = await res.text();
 
-      const datastring = `${arr}`;
+        const datastring = `${arr}`;
 
-      const [key, data] = datastring.split(")]}'");
+        const [key, data] = datastring.split(")]}'");
 
-      const obj = JSON.parse(data);
+        const obj = JSON.parse(data);
 
-      const photosarr = obj[0];
+        const photosarr = obj[0];
 
-      photosarr.map((photo) => {
-        photomenu_result.push(
-          photo[6][0] //photo menu url
+        if (photosarr) {
+          photosarr.map((photo) => {
+            photomenu_result.push(
+              photo[6][0] //photo menu url
+            );
+          });
+        }
+      } catch (error) {
+        console.error(
+          error,
+          "error processing photo menu data at response listener"
         );
-      });
+      }
     }
   });
 
   page.on("response", async (res) => {
     const string = "listentitiesreviews";
     if (res.url().indexOf(string) > 0) {
-      const arr = await res.text();
+      try {
+        const arr = await res.text();
 
-      const datastring = `${arr}`;
+        const datastring = `${arr}`;
 
-      const [key, data] = datastring.split(")]}'");
+        const [key, data] = datastring.split(")]}'");
 
-      const obj = JSON.parse(data);
+        const obj = JSON.parse(data);
 
-      const reviewsarr = obj[2];
+        const reviewsarr = obj[2];
 
-      reviewsarr.map((review) => {
-        reviews_result.push(formatData.formatReview(review));
-      });
+        if (reviewsarr) {
+          reviewsarr.map((review) => {
+            reviews_result.push(formatData.formatReview(review));
+          });
+        }
+      } catch (error) {
+        console.error(
+          error,
+          "error processing review data at response listener"
+        );
+      }
     }
   });
 
@@ -160,7 +183,7 @@ async function getData(page, place_id) {
       );
 
       if (!isFound) {
-        console.log("photo menu not found");
+        console.log("photo menu not found, searching for all photo");
         await navigate.clickSelectorAndScroll(
           page,
           photoMenuSelector,
@@ -193,7 +216,7 @@ async function getData(page, place_id) {
       {
         divToScrollSelector: divToScrollSelector,
         interval: 150,
-        timeout: 15000,
+        timeout: 20000,
       }
     );
 
@@ -232,6 +255,10 @@ async function getData(page, place_id) {
         place_data.photos = {
           all: [...photomenu_result],
         };
+      }
+
+      if (reviews_result.length > 0) {
+        place_data.reviews = reviews_result;
       }
 
       GmapsCrawled.create(place_data)

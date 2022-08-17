@@ -30,9 +30,13 @@ exports.formatReview = (review) => {
               profile_link: review[0][0],
               name: review[0][1],
               profile_photo: review[0][2],
-              total_reviews: review[12][1][1],
-              level: review[12][1][0] ? review[12][1][0][0] : "",
-              description: review[12][1][12][0] ? review[12][1][12][0] : "",
+              total_reviews: review[12] ? review[12][1][1] : null,
+              level: review[12][1][0] ? review[12][1][0][0] : null,
+              description: review[12]
+                ? review[12][1][12]
+                  ? review[12][1][12][0]
+                  : ""
+                : "",
             },
 
       timeDiff: review[1],
@@ -78,8 +82,8 @@ exports.formatPlaceData = (data) => {
     price: data[6][4] ? data[6][4][10] : "",
     rating: data[6][4] ? data[6][4][7] : null,
     total_reviews: data[6][4] ? data[6][4][8] : null,
-    rating_summary:
-      data[6][52] && data[6][52][3]
+    rating_summary: data[6][52]
+      ? data[6][52][3]
         ? {
             five_stars: data[6][52][3][4],
             four_stars: data[6][52][3][3],
@@ -87,34 +91,39 @@ exports.formatPlaceData = (data) => {
             two_stars: data[6][52][3][1],
             one_stars: data[6][52][3][0],
           }
-        : {},
-    reviews:
-      data[6][52] && data[6][52][0]
+        : {}
+      : {},
+    reviews: data[6][52]
+      ? data[6][52][0]
         ? data[6][52][0].map((review) => this.formatReview(review))
-        : [],
-    services:
-      data[6][100] && data[6][100][1]
+        : []
+      : [],
+    services: data[6][100]
+      ? data[6][100][1]
         ? data[6][100][1].map((detail) => {
             return {
               name: detail[0] || detail[1],
-              items: detail[2].map((item) => {
-                return {
-                  path: item[0],
-                  type: item[1],
-                  flag: item[2][2][0],
-                  descriptions: item[2][2],
-                };
-              }),
+              items: detail[2]
+                ? detail[2].map((item) => {
+                    return {
+                      path: item[0],
+                      type: item[1],
+                      flag: item[2] ? item[2][0] : null,
+                      descriptions: item[2] ? item[2][2] : null,
+                    };
+                  })
+                : [],
             };
           })
-        : [],
+        : []
+      : [],
     title: data[6][11] || "",
     type: data[6][13] || [],
     photos: {
       food: [],
     },
-    popular_times:
-      data[6][84] && data[6][84][0]
+    popular_times: data[6][84]
+      ? data[6][84][0]
         ? data[6][84][0].map((day) => {
             return {
               day: numToDay(day[0]),
@@ -131,7 +140,8 @@ exports.formatPlaceData = (data) => {
                 : null,
             };
           })
-        : [],
+        : []
+      : [],
   };
 
   return document;
