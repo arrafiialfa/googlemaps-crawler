@@ -34,7 +34,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: ["--lang=en-UK", "--no-sandbox", "--disable-dev-shm-usage"],
       });
       page = await browser.newPage();
@@ -85,7 +85,6 @@ async function getData(page, place_id) {
   page.on("response", async (res) => {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
-      console.log("place data captured");
       try {
         const arr = await res.text();
 
@@ -172,8 +171,10 @@ async function getData(page, place_id) {
     }
 
     //1.goto main page then click directions button
+    console.log("going to url");
     await page.goto(url);
 
+    console.log("navigating to directions page");
     await navigate.clickSelector(page, directionButtonSelector, ["directions"]);
 
     //1.1.wait for directions page to fully load
@@ -183,13 +184,15 @@ async function getData(page, place_id) {
     });
 
     //1.2.go back to main page, and place data will be captured
+    console.log("going back to main page");
     await page.goBack();
 
     navigate.wait(5000);
 
+    //2. go to photo page if exists
+    console.log("navigating to photo menus");
+    photoMenuFound = await navigateToPhotoMenu();
     async function navigateToPhotoMenu() {
-      console.log("navigating to photo menus");
-
       let isFound = false;
       isFound = await navigate.clickSelectorAndScroll(
         page,
@@ -223,14 +226,9 @@ async function getData(page, place_id) {
       }
     }
 
-    //2. go to photo page
-    photoMenuFound = await navigateToPhotoMenu();
-
     await page.goBack();
-
-    //3.go to all reviews page
+    //3.go to all reviews page if exists
     console.log("navigating to all reviews page");
-
     await navigate.clickSelectorAndScroll(
       page,
       moreReviewsSelector,
@@ -256,6 +254,7 @@ async function getData(page, place_id) {
 
       place_data.reviews = reviews_result;
 
+      console.log("inserting document to DB");
       GmapsCrawled.create(place_data)
         .then((response) => {
           console.log("data is sucessfully saved to database", response);
@@ -264,7 +263,7 @@ async function getData(page, place_id) {
           console.error(error);
         });
     } else {
-      console.error("place request not captured");
+      console.error("place data is not captured");
     }
   } catch (err) {
     console.error(err);
@@ -284,6 +283,7 @@ async function getData(page, place_id) {
         place_data.reviews = reviews_result;
       }
 
+      console.log("inserting document to DB");
       GmapsCrawled.create(place_data)
         .then((response) => {
           console.log("data is sucessfully saved to database", response);
@@ -292,7 +292,7 @@ async function getData(page, place_id) {
           console.error(error);
         });
     } else {
-      console.error("place request not captured");
+      console.error("place data not captured");
     }
   } finally {
     if (i === ids.length - 1) {
