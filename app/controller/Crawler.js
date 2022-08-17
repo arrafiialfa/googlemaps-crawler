@@ -16,7 +16,7 @@ let browser = null;
 
 let page = null;
 let ids = null;
-let i = 889;
+let i = 1618;
 
 exports.startApp = async (request, response) => {
   const arr = await GooglePlaces.findIds(request.query);
@@ -34,7 +34,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         args: ["--lang=en-UK", "--no-sandbox", "--disable-dev-shm-usage"],
       });
       page = await browser.newPage();
@@ -70,13 +70,22 @@ async function getData(page, place_id) {
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
   const photoMenuSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+  const allPhotoSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.ZKCDEc > div.RZ66Rb.FgCUCc > button";
   const moreReviewsSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.TIHn2 > div.tAiQdd > div.lMbq3e > div.LBgpqf > div > div.fontBodyMedium.dmRWX > span > span > span > span.F7nice.mmu3tf > span > button";
+
+  const directionButtonSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.etWJQ.jym1ob.kdfrQc.pChizd.bWQG4d > button ";
+
+  const directionDetailSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > h2 > div.sErS0c.fontHeadlineSmall.Cpt1Qd";
 
   //response listener
   page.on("response", async (res) => {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
+      console.log("place data captured");
       try {
         const arr = await res.text();
 
@@ -162,8 +171,21 @@ async function getData(page, place_id) {
       return;
     }
 
-    //goto main page then navigate to food/services menus then scroll
+    //1.goto main page then click directions button
     await page.goto(url);
+
+    await navigate.clickSelector(page, directionButtonSelector, ["directions"]);
+
+    //1.1.wait for directions page to fully load
+    await page.waitForSelector(directionDetailSelector, {
+      Visible: true,
+      timeout: 10000,
+    });
+
+    //1.2.go back to main page, and place data will be captured
+    await page.goBack();
+
+    navigate.wait(5000);
 
     async function navigateToPhotoMenu() {
       console.log("navigating to photo menus");
@@ -190,28 +212,24 @@ async function getData(page, place_id) {
 
       if (!isFound) {
         console.log("photo menu not found, searching for all photo");
-        await navigate.clickSelectorAndScroll(
-          page,
-          photoMenuSelector,
-          ["all", "semua"],
-          {
-            divToScrollSelector: divToScrollSelector,
-            interval: 150,
-            timeout: 7000,
-          }
-        );
+        await navigate.clickSelectorAndScroll(page, allPhotoSelector, null, {
+          divToScrollSelector: divToScrollSelector,
+          interval: 150,
+          timeout: 7000,
+        });
         return isFound;
       } else {
         return isFound;
       }
     }
 
+    //2. go to photo page
     photoMenuFound = await navigateToPhotoMenu();
 
-    //go back to capture place data then go to more reviews page
     await page.goBack();
 
-    console.log("navigating to more reviews page");
+    //3.go to all reviews page
+    console.log("navigating to all reviews page");
 
     await navigate.clickSelectorAndScroll(
       page,
@@ -224,6 +242,7 @@ async function getData(page, place_id) {
       }
     );
 
+    //if page.on('place response') is triggered then data is saved to db
     if (place_data) {
       if (photoMenuFound) {
         place_data.photos = {

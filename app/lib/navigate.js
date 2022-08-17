@@ -1,6 +1,6 @@
 //auto scroll
 exports.autoScroll = async (page, selector, interval, timeout) => {
-  await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
+  await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
 
   console.log(`Scrolling ... ${Date.now()}`);
   await page.evaluate(
@@ -25,7 +25,7 @@ exports.autoScroll = async (page, selector, interval, timeout) => {
 exports.clickSelector = async (page, selector, queries) => {
   try {
     let found = false;
-    await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
+    await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
 
     //click more reviews
     found = await page.$$eval(
@@ -36,7 +36,6 @@ exports.clickSelector = async (page, selector, queries) => {
             if (queries) {
               queries.map((query) => {
                 if (new RegExp(query).test(element.innerHTML.toLowerCase())) {
-                  console.log("checked");
                   element.click();
                   resolve(true);
                 } else if (i + 1 === elements.length) {
@@ -53,7 +52,11 @@ exports.clickSelector = async (page, selector, queries) => {
       queries
     );
 
-    return found;
+    if (found) {
+      return found;
+    } else {
+      throw new Error("element doesnt match query");
+    }
   } catch (err) {
     console.error("selector not found");
     throw err;
@@ -68,7 +71,7 @@ exports.clickSelectorAndScroll = async (
 ) => {
   try {
     let found = false;
-    await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
+    await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
 
     //click more reviews
     found = await page.$$eval(
@@ -106,4 +109,12 @@ exports.clickSelectorAndScroll = async (
     console.error("selector not found");
     throw err;
   }
+};
+
+exports.wait = async (timeout) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(function () {
+      resolve();
+    }, timeout);
+  });
 };
