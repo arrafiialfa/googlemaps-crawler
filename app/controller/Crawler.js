@@ -210,26 +210,20 @@ async function getData(page, place_id) {
         console.log(
           "photo selector was not found, searching for all photo selector"
         );
-        await navigate.clickSelectorAndScroll(
-          page,
-          allPhotoSelector,
-          ["all", "semua"],
-          {
-            divToScrollSelector: divToScrollSelector,
-            interval: 150,
-            timeout: 7000,
-          }
-        );
+        await navigate.clickSelectorAndScroll(page, allPhotoSelector, null, {
+          divToScrollSelector: divToScrollSelector,
+          interval: 150,
+          timeout: 7000,
+        });
         return false;
       }
     }
 
     console.log("navigating to photo menus");
-    console.log("navigatetophotomenu start ", Date.now());
     photoMenuFound = await navigateToPhotoMenu();
-    console.log("navigatetophotomenu ended ", Date.now());
 
     //go back to capture place data then go to more reviews page
+    console.log("going back to capture place data");
     await page.goBack();
 
     console.log("navigating to more reviews page");
@@ -245,6 +239,7 @@ async function getData(page, place_id) {
     );
 
     if (place_data) {
+      console.log("place data found, inserting document to DB");
       if (photoMenuFound) {
         place_data.photos = {
           food: [...photomenu_result],
@@ -271,6 +266,7 @@ async function getData(page, place_id) {
     console.error(err);
 
     if (place_data) {
+      console.log("place data found, inserting document to DB");
       if (photoMenuFound) {
         place_data.photos = {
           food: [...photomenu_result],
