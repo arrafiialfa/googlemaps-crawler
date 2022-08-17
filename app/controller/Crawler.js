@@ -70,6 +70,8 @@ async function getData(page, place_id) {
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
   const photoMenuSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+  const allPhotoSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.ZKCDEc > div.RZ66Rb.FgCUCc > button";
   const moreReviewsSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.TIHn2 > div.tAiQdd > div.lMbq3e > div.LBgpqf > div > div.fontBodyMedium.dmRWX > span > span > span > span.F7nice.mmu3tf > span > button";
 
@@ -166,33 +168,51 @@ async function getData(page, place_id) {
     await page.goto(url);
 
     async function navigateToPhotoMenu() {
-      console.log("navigating to photo menus");
-
       let isFound = false;
-      isFound = await navigate.clickSelectorAndScroll(
-        page,
-        photoMenuSelector,
-        [
-          "menu",
-          "food",
-          "drink",
-          "makanan &amp; minuman",
-          "food &amp; drink",
-          "coffee",
-          "kopi",
-        ],
-        {
-          divToScrollSelector: divToScrollSelector,
-          interval: 150,
-          timeout: 7000,
-        }
-      );
 
-      if (!isFound) {
-        console.log("photo menu not found, searching for all photo");
-        await navigate.clickSelectorAndScroll(
+      try {
+        isFound = await navigate.clickSelectorAndScroll(
           page,
           photoMenuSelector,
+          [
+            "menu",
+            "food",
+            "drink",
+            "makanan &amp; minuman",
+            "food &amp; drink",
+            "coffee",
+            "kopi",
+          ],
+          {
+            divToScrollSelector: divToScrollSelector,
+            interval: 150,
+            timeout: 7000,
+          }
+        );
+
+        if (!isFound) {
+          console.log("photo menu not found, searching for all photo");
+          await navigate.clickSelectorAndScroll(
+            page,
+            photoMenuSelector,
+            ["all", "semua"],
+            {
+              divToScrollSelector: divToScrollSelector,
+              interval: 150,
+              timeout: 7000,
+            }
+          );
+          return isFound;
+        } else {
+          return isFound;
+        }
+      } catch (error) {
+        console.log(
+          "photo selector was not found, searching for all photo selector"
+        );
+        await navigate.clickSelectorAndScroll(
+          page,
+          allPhotoSelector,
           ["all", "semua"],
           {
             divToScrollSelector: divToScrollSelector,
@@ -200,13 +220,14 @@ async function getData(page, place_id) {
             timeout: 7000,
           }
         );
-        return isFound;
-      } else {
-        return isFound;
+        return false;
       }
     }
 
+    console.log("navigating to photo menus");
+    console.log("navigatetophotomenu start ", Date.now());
     photoMenuFound = await navigateToPhotoMenu();
+    console.log("navigatetophotomenu ended ", Date.now());
 
     //go back to capture place data then go to more reviews page
     await page.goBack();

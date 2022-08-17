@@ -1,6 +1,6 @@
 //auto scroll
 exports.autoScroll = async (page, selector, interval, timeout) => {
-  await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
+  await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
 
   console.log(`Scrolling ... ${Date.now()}`);
   await page.evaluate(
@@ -25,7 +25,7 @@ exports.autoScroll = async (page, selector, interval, timeout) => {
 exports.clickSelector = async (page, selector, queries) => {
   try {
     let found = false;
-    await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
+    await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
 
     //click more reviews
     found = await page.$$eval(
@@ -68,7 +68,7 @@ exports.clickSelectorAndScroll = async (
 ) => {
   try {
     let found = false;
-    await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
+    await page.waitForSelector(selector, { Visible: true, timeout: 3000 });
 
     //click more reviews
     found = await page.$$eval(
