@@ -16,7 +16,7 @@ let browser = null;
 
 let page = null;
 let ids = null;
-let i = 645;
+let i = 889;
 
 exports.startApp = async (request, response) => {
   const arr = await GooglePlaces.findIds(request.query);
@@ -26,6 +26,10 @@ exports.startApp = async (request, response) => {
     `${path.resolve(__dirname)}../../../crawl_data/idstocrawl.json`,
     `[${ids.map((id) => `"${id}"`).join(",")}]`
   );
+
+  if (request.query.startfrom) {
+    i = request.query.startfrom;
+  }
 
   if (!browser) {
     try {
@@ -64,12 +68,15 @@ async function getData(page, place_id) {
 
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
+  const photoMenuSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+  const moreReviewsSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.TIHn2 > div.tAiQdd > div.lMbq3e > div.LBgpqf > div > div.fontBodyMedium.dmRWX > span > span > span > span.F7nice.mmu3tf > span > button";
 
   //response listener
   page.on("response", async (res) => {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
-      console.log("place data captured");
       try {
         const arr = await res.text();
 
@@ -160,10 +167,9 @@ async function getData(page, place_id) {
 
     async function navigateToPhotoMenu() {
       console.log("navigating to photo menus");
-      const photoMenuSelector =
-        "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
 
-      const isFound = await navigate.clickSelectorAndScroll(
+      let isFound = false;
+      isFound = await navigate.clickSelectorAndScroll(
         page,
         photoMenuSelector,
         [
@@ -202,12 +208,10 @@ async function getData(page, place_id) {
 
     photoMenuFound = await navigateToPhotoMenu();
 
-    //goto main page then go to more reviews page
+    //go back to capture place data then go to more reviews page
     await page.goBack();
 
     console.log("navigating to more reviews page");
-    const moreReviewsSelector =
-      "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.TIHn2 > div.tAiQdd > div.lMbq3e > div.LBgpqf > div > div.fontBodyMedium.dmRWX > span > span > span > span.F7nice.mmu3tf > span > button";
 
     await navigate.clickSelectorAndScroll(
       page,
