@@ -34,7 +34,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: ["--lang=en-UK", "--no-sandbox", "--disable-dev-shm-usage"],
       });
       page = await browser.newPage();
