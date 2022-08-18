@@ -1,19 +1,31 @@
+// import Puppeteer from "puppeteer";
 //auto scroll
+// let divToScrollSelectorLoaded = false;
 exports.autoScroll = async (page, selector, interval, timeout) => {
   await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
+  // if (!divToScrollSelectorLoaded) {
+  //   divToScrollSelectorLoaded = true;
+  // }
 
   await page.evaluate(
     ({ selector, interval, timeout }) => {
       const element = document.querySelector(selector);
       return new Promise((resolve, reject) => {
-        const distance = 300;
-        const timer = setInterval(() => {
-          element.scrollBy(0, distance);
-        }, interval);
-        setTimeout(() => {
-          clearInterval(timer);
+        try {
+          const distance = 300;
+          const timer = setInterval(() => {
+            element.scrollBy(0, distance);
+          }, interval);
+          setTimeout(() => {
+            clearInterval(timer);
+            // reset scrolling
+            element.scroll(0, 0);
+            resolve();
+          }, timeout);
+        } catch (error) {
+          console.log(error);
           resolve();
-        }, timeout);
+        }
       });
     },
     { selector, interval, timeout }
@@ -53,55 +65,73 @@ exports.clickSelector = async (page, selector, queries) => {
 
     return found;
   } catch (err) {
+    console.log(err);
     console.error("selector not found");
     throw err;
   }
 };
 
-exports.clickSelectorAndScroll = async (
+/**
+ * @param {Puppeteer.Page} page
+ */
+exports.clickSelectorAndScroll = (
   page,
   selector,
-  queries,
+  query,
   { divToScrollSelector, interval, timeout }
 ) => {
-  try {
-    let found = false;
-    await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
+  return new Promise(async (res, rej) => {
+    console.log(`Clickselector ${query}`);
+    try {
+      let found = false;
 
-    //click more reviews
-    found = await page.$$eval(
-      selector,
-      (elements, queries) => {
-        return new Promise((resolve, reject) => {
+      //click more reviews
+      await page.evaluate((query) => (window.searchfor = query), query);
+      found = await page.$$eval(
+        selector,
+        (elements, query) => {
+          console.log(`Starting query ${query} on ${elements.length} elements`);
+          // console.log(query, window.searchfor);
+          let elementClick = false;
           elements.map((element, i) => {
-            if (queries) {
-              queries.map((query) => {
-                if (new RegExp(query).test(element.innerHTML.toLowerCase())) {
-                  console.log("checked");
-                  element.click();
-                  resolve(true);
-                } else if (i + 1 === elements.length) {
-                  resolve(false);
-                }
-              });
+            console.log(`INNERTEXT ${element.innerHTML} testing ${query}`);
+            if (query) {
+              if (new RegExp(query).test(element.innerHTML.toLowerCase())) {
+                console.log(query, "checked");
+                element.click();
+                elementClick = true;
+                return;
+              } else if (i + 1 === elements.length) {
+              }
             } else {
               element.click();
-              resolve(true);
             }
           });
+          console.log(`Finished query ${query}`);
+          return elementClick;
+        },
+        query
+      );
+      console.log(`Makjoss ${found}`);
+      if (found) {
+        await this.autoScroll(page, divToScrollSelector, interval, timeout);
+        await page.evaluate(() => {
+          document.querySelector("button[data-tooltip=Kembali]").click();
         });
-      },
-      queries
-    );
+        await new Promise((res) =>
+          setTimeout(() => {
+            res();
+          }, 1000)
+        );
 
-    if (found) {
-      await this.autoScroll(page, divToScrollSelector, interval, timeout);
-      return found;
-    } else {
-      return found;
+        res(found);
+      } else {
+        res(found);
+      }
+    } catch (err) {
+      console.log(err);
+      console.error(`selector ${selector} ${query} not found`);
+      res(false);
     }
-  } catch (err) {
-    console.error("selector not found");
-    throw err;
-  }
+  });
 };

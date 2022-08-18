@@ -2,6 +2,7 @@ const db = require("../models");
 const GmapsCrawledData = db.gmaps_crawled_data;
 
 exports.create = async (document) => {
+  console.log(document);
   try {
     const data = await GmapsCrawledData.create(document);
     const result = {
