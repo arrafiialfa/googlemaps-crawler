@@ -1,6 +1,6 @@
 module.exports = (mongoose) => {
   const GooglemapsCrawledData = mongoose.model(
-    "googlemaps_crawled_data",
+    "googlemaps_crawled_data_full",
     mongoose.Schema(
       {
         id: String,

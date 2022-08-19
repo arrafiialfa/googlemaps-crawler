@@ -130,4 +130,5 @@ dist
 .pnp.*
 
 crawl_data/
+user_data/
 

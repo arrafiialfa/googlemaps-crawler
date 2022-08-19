@@ -5,6 +5,7 @@ const navigate = require("../lib/navigate");
 const formatData = require("../lib/formatData");
 const GooglePlaces = require("./GooglePlaces");
 const GmapsCrawled = require("./GmapsCrawledData");
+const db = require("../models/");
 
 /**
  * @type {puppeteer.Browser}
@@ -16,14 +17,19 @@ let browser = null;
 
 let page = null;
 let ids = null;
-let i = 889;
+let i = 0;
 
 exports.startApp = async (request, response) => {
-  const arr = await GooglePlaces.findIds(request.query);
-  ids = arr.map((place) => place.place_id);
+  if (request.query.a) {
+    ids = ["ChIJMWm78j_0aS4ROB7UZpoE2kU"];
+  } else {
+    const arr = await GooglePlaces.findIds();
+    // console.log(arr);
+    ids = arr.map((place) => place.place_id);
+  }
 
   fs.writeFileSync(
-    `${path.resolve(__dirname)}../../../crawl_data/idstocrawl.json`,
+    `${path.resolve(__dirname)}/../../crawl_data/idstocrawl.json`,
     `[${ids.map((id) => `"${id}"`).join(",")}]`
   );
 
@@ -34,8 +40,17 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: true,
-        args: ["--lang=en-UK", "--no-sandbox", "--disable-dev-shm-usage"],
+        headless: false,
+        devtools: true,
+
+        defaultViewport: null,
+        userDataDir: "./user_data",
+        args: [
+          "--lang=id-ID",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--start-maximized",
+        ],
       });
       page = await browser.newPage();
       response.status(200).json({
@@ -62,9 +77,7 @@ async function getData(page, place_id) {
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
   let reviews_result = [];
-  let photomenu_result = [];
   let place_data = null;
-  let photoMenuFound = false;
 
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
@@ -95,6 +108,8 @@ async function getData(page, place_id) {
     }
   });
 
+  let photoSwitch = "all";
+  let photos = {};
   page.on("response", async (res) => {
     const string = "photo?authuser";
     if (res.url().indexOf(string) > 0) {
@@ -109,13 +124,13 @@ async function getData(page, place_id) {
 
         const photosarr = obj[0];
 
-        if (photosarr) {
-          photosarr.map((photo) => {
-            photomenu_result.push(
-              photo[6][0] //photo menu url
-            );
-          });
-        }
+        photosarr.map((photo) => {
+          if (!photos[photoSwitch]) {
+            photos[photoSwitch] = [photo[6][0]];
+          } else {
+            photos[photoSwitch].push(photo[6][0]);
+          }
+        });
       } catch (error) {
         console.error(
           error,
@@ -152,7 +167,7 @@ async function getData(page, place_id) {
       }
     }
   });
-
+  let stop = false;
   try {
     //crawl data exsist => return
     if (
@@ -164,31 +179,51 @@ async function getData(page, place_id) {
       return;
     }
 
+    stop = true;
+
     //goto main page then navigate to food/services menus then scroll
     await page.goto(url);
 
     async function navigateToPhotoMenu() {
-      let isFound = false;
-
       try {
-        isFound = await navigate.clickSelectorAndScroll(
-          page,
-          photoMenuSelector,
-          [
-            "menu",
-            "food",
-            "drink",
-            "makanan &amp; minuman",
-            "food &amp; drink",
-            "coffee",
-            "kopi",
-          ],
-          {
-            divToScrollSelector: divToScrollSelector,
-            interval: 150,
-            timeout: 7000,
+        const photokeywords = [
+          ["menu", "menu"],
+          ["food", "food"],
+          ["suasana", "suasana"],
+          ["drink", "drink"],
+          ["makanan &amp; minuman", "makanan_minuman"],
+          ["kopi", "kopi"],
+        ];
+        console.log("navigating to photo menus");
+
+        let isFound = false;
+        await page.waitForSelector(photoMenuSelector, {
+          Visible: true,
+          timeout: 2500,
+        });
+        for (let keyword of photokeywords) {
+          console.log(`Looking photo of ${keyword}`);
+          photoSwitch = keyword[1];
+          let successs = await navigate.clickSelectorAndScroll(
+            page,
+            photoMenuSelector,
+            keyword[0],
+            {
+              divToScrollSelector: divToScrollSelector,
+              interval: 150,
+              timeout: 7000,
+            }
+          );
+          if (successs) {
+            isFound = true;
+            console.log(`Photo keyword ${keyword} found`);
+            await new Promise((res) =>
+              setTimeout(() => {
+                res();
+              }, 1000)
+            );
           }
-        );
+        }
 
         if (!isFound) {
           console.log("photo menu not found, searching for all photo");
@@ -222,33 +257,24 @@ async function getData(page, place_id) {
     console.log("navigating to photo menus");
     photoMenuFound = await navigateToPhotoMenu();
 
-    //go back to capture place data then go to more reviews page
-    console.log("going back to capture place data");
+    console.log("navigating to more reviews page");
     await page.goBack();
 
-    console.log("navigating to more reviews page");
-    await navigate.clickSelectorAndScroll(
-      page,
-      moreReviewsSelector,
-      ["reviews", "ulasan"],
-      {
-        divToScrollSelector: divToScrollSelector,
-        interval: 150,
-        timeout: 20000,
-      }
-    );
+    for (let keyword of ["reviews", "ulasan"]) {
+      await navigate.clickSelectorAndScroll(
+        page,
+        moreReviewsSelector,
+        keyword,
+        {
+          divToScrollSelector: divToScrollSelector,
+          interval: 150,
+          timeout: 15000,
+        }
+      );
+    }
 
     if (place_data) {
-      console.log("place data found, inserting document to DB");
-      if (photoMenuFound) {
-        place_data.photos = {
-          food: [...photomenu_result],
-        };
-      } else {
-        place_data.photos = {
-          all: [...photomenu_result],
-        };
-      }
+      place_data.photos = photos;
 
       place_data.reviews = reviews_result;
 
@@ -266,16 +292,7 @@ async function getData(page, place_id) {
     console.error(err);
 
     if (place_data) {
-      console.log("place data found, inserting document to DB");
-      if (photoMenuFound) {
-        place_data.photos = {
-          food: [...photomenu_result],
-        };
-      } else {
-        place_data.photos = {
-          all: [...photomenu_result],
-        };
-      }
+      place_data.photos = photos;
 
       if (reviews_result.length > 0) {
         place_data.reviews = reviews_result;
@@ -297,6 +314,7 @@ async function getData(page, place_id) {
       return;
     } else {
       i++;
+      // if (!stop)
       getData(page, ids[i]);
     }
   }

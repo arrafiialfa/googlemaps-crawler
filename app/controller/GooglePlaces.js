@@ -9,12 +9,14 @@ exports.findIds = async (query) => {
   query = {
     $or: [
       { name: { $in: [/coffee/, /food/, /kopi/, /cafe/] } },
-      { types: { $in: ["cafe", "food", "restaurant"] } },
+      // { types: { $in: ["cafe", "food", "restaurant"] } },
     ],
   };
 
   try {
-    const data = await GooglePlaces.find({}, "place_id");
+    const data = await GooglePlaces.find({}, { place_id: 1 });
+
+    // console.log(data);
 
     return data;
   } catch (error) {
