@@ -119,10 +119,10 @@ async function getData(page, place_id) {
 
         const obj = JSON.parse(data);
 
-        fs.writeFileSync(
-          path.join(__dirname, `../../crawl_data/place_${Date.now()}`),
-          data
-        );
+        // fs.writeFileSync(
+        //   path.join(__dirname, `../../crawl_data/place_${Date.now()}`),
+        //   data
+        // );
 
         place_data = formatData.formatPlaceData(obj);
       } catch (err) {
@@ -146,6 +146,11 @@ async function getData(page, place_id) {
         const obj = JSON.parse(data);
 
         const photosarr = obj[0];
+
+        fs.writeFileSync(
+          path.join(__dirname, `../../crawl_data/photo_${Date.now()}`),
+          data
+        );
 
         photosarr.map((photo) => {
           if (!photos[photoSwitch]) {

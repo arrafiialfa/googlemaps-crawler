@@ -103,14 +103,7 @@ exports.formatPlaceData = (data) => {
       data[6][52] && data[6][52][0]
         ? data[6][52][0].map((review) => this.formatReview(review))
         : [],
-    service_options:
-      data[6][100] && data[6][100][1] && data[6][100][1][0][2]
-        ? {
-            [data[6][100][1][0][2][0][1]]: data[6][100][1][0][2][0][2][0],
-            [data[6][100][1][0][2][1][1]]: data[6][100][1][0][2][1][2][0],
-            [data[6][100][1][0][2][2][1]]: data[6][100][1][0][2][2][2][0],
-          }
-        : {},
+
     services:
       data[6][100] &&
       data[6][100][1] &&
