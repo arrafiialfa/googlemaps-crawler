@@ -41,7 +41,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         devtools: true,
 
         defaultViewport: null,
@@ -154,9 +154,17 @@ async function getData(page, place_id) {
 
         photosarr.map((photo) => {
           if (!photos[photoSwitch]) {
-            photos[photoSwitch] = [photo[6][0]];
+            photos[photoSwitch] = [
+              {
+                thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
+                image: `https://lh5.googleusercontent.com/p/${photo[0]}=w4032-h3024-k-no`,
+              },
+            ];
           } else {
-            photos[photoSwitch].push(photo[6][0]);
+            photos[photoSwitch].push({
+              thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
+              image: `https://lh5.googleusercontent.com/p/${photo[0]}=w4032-h3024-k-no`,
+            });
           }
         });
       } catch (error) {
