@@ -147,23 +147,23 @@ async function getData(page, place_id) {
 
         const photosarr = obj[0];
 
-        fs.writeFileSync(
-          path.join(__dirname, `../../crawl_data/photo_${Date.now()}`),
-          data
-        );
+        // fs.writeFileSync(
+        //   path.join(__dirname, `../../crawl_data/photo_${Date.now()}`),
+        //   data
+        // );
 
         photosarr.map((photo) => {
           if (!photos[photoSwitch]) {
             photos[photoSwitch] = [
               {
                 thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
-                image: `https://lh5.googleusercontent.com/p/${photo[0]}=w4032-h3024-k-no`,
+                image: `https://lh5.googleusercontent.com/p/${photo[0]}=w1920-h1080-k-no`,
               },
             ];
           } else {
             photos[photoSwitch].push({
               thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
-              image: `https://lh5.googleusercontent.com/p/${photo[0]}=w4032-h3024-k-no`,
+              image: `https://lh5.googleusercontent.com/p/${photo[0]}=w1920-h1080-k-no`,
             });
           }
         });
