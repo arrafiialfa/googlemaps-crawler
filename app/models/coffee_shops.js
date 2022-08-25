@@ -5,7 +5,7 @@ module.exports = (mongoose) => {
       {
         id: String,
         address: [],
-        website: String,
+        website: {},
         createdAt: {},
         data_cid: String,
         data_id: String,
@@ -36,6 +36,7 @@ module.exports = (mongoose) => {
         popular_times: [],
         rating_summary: {},
         services: [],
+        plus_code: [],
       },
       { timestamps: true }
     )

@@ -52,8 +52,15 @@ exports.formatReview = (review) => {
 
 exports.formatPlaceData = (data) => {
   const document = {
+    thumbnail: data[6][72] ? data[6][72][0][1][6][0] : "",
     address: data[6][2] || [],
-    website: data[6][7] ? data[6][7][1] : null,
+    plus_code: data[6][183] ? data[6][183][2][2] : [],
+    website: data[6][7]
+      ? {
+          full: data[6][7][0],
+          shortened: data[6][7][1],
+        }
+      : null,
     data_cid: data[6][37] ? data[6][37][0][0][29][1] : "",
     data_id: data[6][10] || "",
     description: data[6][32] || [],
