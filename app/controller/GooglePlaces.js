@@ -1,23 +1,27 @@
 const db = require("../models");
-const GooglePlaces = db.google_places;
+const GooglePlaces = db.serp_gmaps;
+
+exports.findDoc = async (place_id) => {
+  try {
+    const data = await GooglePlaces.findOne(
+      { place_id: place_id },
+      { _id: 0, __v: 0, createdAt: 0, updatedAt: 0 }
+    );
+    return data._doc;
+  } catch (error) {
+    console.error(error);
+    const result = {
+      success: false,
+      message: "Get Data Failed!",
+      error: error,
+    };
+    return result;
+  }
+};
 
 exports.findIds = async (query) => {
-  // if (query.types) {
-  //   query.types = { $in: query.types };
-  // }
-
-  query = {
-    $or: [
-      { name: { $in: [/coffee/, /food/, /kopi/, /cafe/] } },
-      // { types: { $in: ["cafe", "food", "restaurant"] } },
-    ],
-  };
-
   try {
     const data = await GooglePlaces.find({}, { place_id: 1 });
-
-    // console.log(data);
-
     return data;
   } catch (error) {
     console.error(error);

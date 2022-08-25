@@ -2,7 +2,7 @@
 //auto scroll
 // let divToScrollSelectorLoaded = false;
 exports.autoScroll = async (page, selector, interval, timeout) => {
-  await page.waitForSelector(selector, { Visible: true, timeout: 1500 });
+  await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
   // if (!divToScrollSelectorLoaded) {
   //   divToScrollSelectorLoaded = true;
   // }
@@ -37,7 +37,7 @@ exports.autoScroll = async (page, selector, interval, timeout) => {
 exports.clickSelector = async (page, selector, queries) => {
   try {
     let found = false;
-    await page.waitForSelector(selector, { Visible: true, timeout: 5000 });
+    await page.waitForSelector(selector, { Visible: true, timeout: 7000 });
 
     //click more reviews
     found = await page.$$eval(
@@ -103,10 +103,11 @@ exports.clickSelectorAndScroll = (
                 element.click();
                 elementClick = true;
                 return;
-              } else if (i + 1 === elements.length) {
               }
             } else {
+              elementClick = true;
               element.click();
+              return;
             }
           });
           console.log(`Finished query ${query}`);
@@ -123,7 +124,7 @@ exports.clickSelectorAndScroll = (
         await new Promise((res) =>
           setTimeout(() => {
             res();
-          }, 1000)
+          }, 2000)
         );
 
         res(found);

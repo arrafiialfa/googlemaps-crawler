@@ -1,5 +1,5 @@
 const db = require("../models");
-const GmapsCrawledData = db.gmaps_crawled_data;
+const GmapsCrawledData = db.coffee_shops;
 
 exports.create = async (document) => {
   console.log(document);

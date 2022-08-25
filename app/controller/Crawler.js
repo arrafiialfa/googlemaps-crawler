@@ -17,14 +17,12 @@ let browser = null;
 
 let page = null;
 let ids = null;
-let i = 0;
 
 exports.startApp = async (request, response) => {
   if (request.query.a) {
     ids = ["ChIJMWm78j_0aS4ROB7UZpoE2kU"];
   } else {
     const arr = await GooglePlaces.findIds();
-    // console.log(arr);
     ids = arr.map((place) => place.place_id);
   }
 
@@ -33,8 +31,11 @@ exports.startApp = async (request, response) => {
     `[${ids.map((id) => `"${id}"`).join(",")}]`
   );
 
-  if (request.query.startfrom) {
-    i = request.query.startfrom;
+  let startfrom = 0;
+  startfrom = request.query.startfrom;
+
+  if (startfrom) {
+    ids = ids.slice(startfrom);
   }
 
   if (!browser) {
@@ -54,11 +55,14 @@ exports.startApp = async (request, response) => {
       });
       page = await browser.newPage();
       response.status(200).json({
-        message: `Crawler is Running, starting from ${i} ${ids[i]} of ${
+        message: `Crawler is Running, starting from ${startfrom} of ${
           ids.length - 1
-        } ${ids[ids.length - 1]}`,
+        } `,
       });
-      getData(page, ids[i]);
+
+      for (const id of ids) {
+        await getData(page, id);
+      }
     } catch (error) {
       console.log(error, "Retrying");
       this.startApp(request, response);
@@ -67,11 +71,20 @@ exports.startApp = async (request, response) => {
 };
 
 async function getData(page, place_id) {
-  console.log(i, "currently at", ids[i]);
+  console.log("currently at", place_id);
+  //crawl data exsist => return
+  if (
+    await GmapsCrawled.findOne({
+      place_id: place_id,
+    })
+  ) {
+    console.log(place_id, " exists");
+    return;
+  }
 
   fs.writeFileSync(
     `${path.resolve(__dirname)}../../../crawl_data/checkpoint.json`,
-    ` ["${place_id}_${i}"]`
+    ` ["${place_id}"]`
   );
 
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
@@ -89,9 +102,14 @@ async function getData(page, place_id) {
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.TIHn2 > div.tAiQdd > div.lMbq3e > div.LBgpqf > div > div.fontBodyMedium.dmRWX > span > span > span > span.F7nice.mmu3tf > span > button";
 
   //response listener
+  let placerequest = false;
   page.on("response", async (res) => {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
+      if (!placerequest) {
+        console.log("place data captured");
+        placerequest = true;
+      }
       try {
         const arr = await res.text();
 
@@ -101,6 +119,11 @@ async function getData(page, place_id) {
 
         const obj = JSON.parse(data);
 
+        fs.writeFileSync(
+          path.join(__dirname, `../../crawl_data/place_${Date.now()}`),
+          data
+        );
+
         place_data = formatData.formatPlaceData(obj);
       } catch (err) {
         console.error(err, "error processing place data at response listener");
@@ -108,7 +131,7 @@ async function getData(page, place_id) {
     }
   });
 
-  let photoSwitch = "all";
+  let photoSwitch = "Semua";
   let photos = {};
   page.on("response", async (res) => {
     const string = "photo?authuser";
@@ -167,39 +190,26 @@ async function getData(page, place_id) {
       }
     }
   });
-  let stop = false;
+
   try {
-    //crawl data exsist => return
-    if (
-      await GmapsCrawled.findOne({
-        place_id: place_id,
-      })
-    ) {
-      console.log(place_id, " exists");
-      return;
-    }
-
-    stop = true;
-
     //goto main page then navigate to food/services menus then scroll
     await page.goto(url);
 
     async function navigateToPhotoMenu() {
       try {
         const photokeywords = [
-          ["menu", "menu"],
-          ["food", "food"],
-          ["suasana", "suasana"],
-          ["drink", "drink"],
-          ["makanan &amp; minuman", "makanan_minuman"],
-          ["kopi", "kopi"],
+          ["menu", "Menu"],
+          ["suasana", "Suasana"],
+          ["makanan &amp; minuman", "Makanan & minuman"],
+          ["kopi", "Kopi"],
+          ["semua", "Semua"],
         ];
         console.log("navigating to photo menus");
 
         let isFound = false;
         await page.waitForSelector(photoMenuSelector, {
           Visible: true,
-          timeout: 2500,
+          timeout: 5000,
         });
         for (let keyword of photokeywords) {
           console.log(`Looking photo of ${keyword}`);
@@ -220,26 +230,9 @@ async function getData(page, place_id) {
             await new Promise((res) =>
               setTimeout(() => {
                 res();
-              }, 1000)
+              }, 2000)
             );
           }
-        }
-
-        if (!isFound) {
-          console.log("photo menu not found, searching for all photo");
-          await navigate.clickSelectorAndScroll(
-            page,
-            photoMenuSelector,
-            ["all", "semua"],
-            {
-              divToScrollSelector: divToScrollSelector,
-              interval: 150,
-              timeout: 7000,
-            }
-          );
-          return isFound;
-        } else {
-          return isFound;
         }
       } catch (error) {
         console.log(
@@ -255,7 +248,7 @@ async function getData(page, place_id) {
     }
 
     console.log("navigating to photo menus");
-    photoMenuFound = await navigateToPhotoMenu();
+    await navigateToPhotoMenu();
 
     console.log("navigating to more reviews page");
     await page.goBack();
@@ -272,50 +265,35 @@ async function getData(page, place_id) {
         }
       );
     }
-
-    if (place_data) {
-      place_data.photos = photos;
-
-      place_data.reviews = reviews_result;
-
-      GmapsCrawled.create(place_data)
-        .then((response) => {
-          console.log("data is sucessfully saved to database", response);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    } else {
-      console.error("place request not captured");
-    }
   } catch (err) {
     console.error(err);
-
-    if (place_data) {
-      place_data.photos = photos;
-
-      if (reviews_result.length > 0) {
-        place_data.reviews = reviews_result;
-      }
-
-      GmapsCrawled.create(place_data)
-        .then((response) => {
-          console.log("data is sucessfully saved to database", response);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    } else {
-      console.error("place request not captured");
-    }
   } finally {
-    if (i === ids.length - 1) {
-      console.log("Crawl is complete");
-      return;
-    } else {
-      i++;
-      // if (!stop)
-      getData(page, ids[i]);
+    //save document to database
+    if (!place_data) {
+      console.log("place data is not captured, using serp_data instead");
+      //if place data is not captured then adjust exsisting serp_data to be used as place data
+      const docs = await GooglePlaces.findDoc(place_id);
+
+      place_data = {
+        ...docs,
+        address: docs.address ? [docs.address] : [],
+        description: docs.description ? [docs.description] : [],
+        type: docs.type ? [docs.type] : [],
+      };
     }
+
+    place_data.photos_categorized = photos;
+
+    if (reviews_result.length > 0) {
+      place_data.reviews = reviews_result;
+    }
+
+    GmapsCrawled.create(place_data)
+      .then((response) => {
+        console.log("data is sucessfully saved to database", response);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   }
 }

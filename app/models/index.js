@@ -7,6 +7,7 @@ const db = {};
 db.mongoose = mongoose;
 db.url = process.env.MONGODB_URL;
 db.gmaps_crawled_data = require("./googlemaps_crawled.js")(mongoose);
+db.coffee_shops = require("./coffee_shops.js")(mongoose);
 db.google_places = require("./google_places.js")(mongoose);
 db.serp_gmaps = require("./serp_gmaps")(mongoose);
 
