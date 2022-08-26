@@ -41,7 +41,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         devtools: true,
 
         defaultViewport: null,

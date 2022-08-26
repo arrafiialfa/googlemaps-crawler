@@ -118,9 +118,7 @@ exports.clickSelectorAndScroll = (
       console.log(`Makjoss ${found}`);
       if (found) {
         await this.autoScroll(page, divToScrollSelector, interval, timeout);
-        await page.evaluate(() => {
-          document.querySelector("button[data-tooltip=Kembali]").click();
-        });
+        await page.goBack();
         await new Promise((res) =>
           setTimeout(() => {
             res();

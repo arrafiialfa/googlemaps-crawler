@@ -54,7 +54,7 @@ exports.formatPlaceData = (data) => {
   const document = {
     thumbnail: data[6][72] ? data[6][72][0][1][6][0] : "",
     address: data[6][2] || [],
-    plus_code: data[6][183] ? data[6][183][2][2] : [],
+    plus_code: data[6][183] && data[6][183][2] ? data[6][183][2][2] : [],
     website: data[6][7]
       ? {
           full: data[6][7][0],
