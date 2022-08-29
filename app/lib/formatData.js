@@ -86,7 +86,7 @@ exports.formatPlaceData = (data) => {
         : {},
     phone: data[6][178] ? data[6][178][0][1][1][0] : "",
     place_id: data[6][78] || "",
-    price: data[6][4] ? data[6][4][10] : "",
+    price: data[6][4] ? data[6][4][10] : null,
     rating: data[6][4] ? data[6][4][7] : null,
     total_reviews: data[6][4] ? data[6][4][8] : null,
     rating_summary:

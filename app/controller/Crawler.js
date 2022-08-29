@@ -41,7 +41,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         devtools: true,
 
         defaultViewport: null,
@@ -152,21 +152,23 @@ async function getData(page, place_id) {
         //   data
         // );
 
-        photosarr.map((photo) => {
-          if (!photos[photoSwitch]) {
-            photos[photoSwitch] = [
-              {
+        if (photosarr) {
+          photosarr.map((photo) => {
+            if (!photos[photoSwitch]) {
+              photos[photoSwitch] = [
+                {
+                  thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
+                  image: `https://lh5.googleusercontent.com/p/${photo[0]}=w1920-h1080-k-no`,
+                },
+              ];
+            } else {
+              photos[photoSwitch].push({
                 thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
                 image: `https://lh5.googleusercontent.com/p/${photo[0]}=w1920-h1080-k-no`,
-              },
-            ];
-          } else {
-            photos[photoSwitch].push({
-              thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
-              image: `https://lh5.googleusercontent.com/p/${photo[0]}=w1920-h1080-k-no`,
-            });
-          }
-        });
+              });
+            }
+          });
+        }
       } catch (error) {
         console.error(
           error,
