@@ -63,6 +63,8 @@ exports.startApp = async (request, response) => {
       for (const id of ids) {
         await getData(page, id);
       }
+
+      console.log("FINISHED CRAWLING DATA");
     } catch (error) {
       console.log(error, "Retrying");
       this.startApp(request, response);
@@ -157,14 +159,14 @@ async function getData(page, place_id) {
             if (!photos[photoSwitch]) {
               photos[photoSwitch] = [
                 {
-                  thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
-                  image: `https://lh5.googleusercontent.com/p/${photo[0]}=w1920-h1080-k-no`,
+                  thumbnail: photo[6][0],
+                  image: photo[0],
                 },
               ];
             } else {
               photos[photoSwitch].push({
-                thumbnail: `https://lh5.googleusercontent.com/p/${photo[0]}=w203-h114-k-no`,
-                image: `https://lh5.googleusercontent.com/p/${photo[0]}=w1920-h1080-k-no`,
+                thumbnail: photo[6][0],
+                image: photo[0],
               });
             }
           });
