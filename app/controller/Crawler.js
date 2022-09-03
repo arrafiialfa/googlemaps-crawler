@@ -18,7 +18,13 @@ let browser = null;
 let page = null;
 let ids = null;
 
+let startfrom = 0;
+
 exports.startApp = async (request, response) => {
+  let headless = request.query.headless ? request.query.headless : true;
+  let devtools = request.query.devtools ? request.query.devtools : true;
+  startfrom = request.query.startfrom;
+
   if (request.query.a) {
     ids = ["ChIJMWm78j_0aS4ROB7UZpoE2kU"];
   } else {
@@ -31,9 +37,6 @@ exports.startApp = async (request, response) => {
     `[${ids.map((id) => `"${id}"`).join(",")}]`
   );
 
-  let startfrom = 0;
-  startfrom = request.query.startfrom;
-
   if (startfrom) {
     ids = ids.slice(startfrom);
   }
@@ -41,7 +44,7 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         devtools: true,
 
         defaultViewport: null,
