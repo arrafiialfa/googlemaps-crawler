@@ -44,8 +44,8 @@ exports.startApp = async (request, response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: false,
-        devtools: true,
+        headless: true,
+        devtools: false,
 
         defaultViewport: null,
         userDataDir: "./user_data",
