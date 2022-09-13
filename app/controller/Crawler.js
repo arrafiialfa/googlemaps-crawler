@@ -296,10 +296,12 @@ async function getData(page, place_id) {
 
       place_data = {
         ...docs,
+        photos_categorized: photos,
         address: docs.address ? [docs.address] : [],
         website: { full: docs.website },
         description: docs.description ? [docs.description] : [],
         type: docs.type ? [docs.type] : [],
+        reviews: reviews_result.length > 0 ? reviews_result : docs.reviews,
       };
     }
 
