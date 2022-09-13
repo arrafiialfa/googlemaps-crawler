@@ -37,9 +37,12 @@ exports.startApp = async (request, response) => {
     `[${ids.map((id) => `"${id}"`).join(",")}]`
   );
 
-  if (startfrom) {
+  if (startfrom&&endAt) {
+    ids = ids.slice(startfrom,endAt+1);
+  }else if(startfrom){
     ids = ids.slice(startfrom);
   }
+
 
   if (!browser) {
     try {
