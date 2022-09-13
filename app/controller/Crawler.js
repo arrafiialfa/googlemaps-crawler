@@ -38,12 +38,11 @@ exports.startApp = async (request, response) => {
   //   `[${ids.map((id) => `"${id}"`).join(",")}]`
   // );
 
-  if (startfrom&&endAt) {
-    ids = ids.slice(startfrom,endAt);
-  }else if(startfrom){
+  if (startfrom && endAt) {
+    ids = ids.slice(startfrom, endAt);
+  } else if (startfrom) {
     ids = ids.slice(startfrom);
   }
-
 
   if (!browser) {
     try {
@@ -116,7 +115,7 @@ async function getData(page, place_id) {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
       if (!placerequest) {
-        console.log("place data captured","color:blue");
+        console.log("%cplace data captured", "color:blue");
         placerequest = true;
       }
       try {
