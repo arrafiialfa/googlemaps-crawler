@@ -32,13 +32,13 @@ exports.startApp = async (request, response) => {
     ids = arr.map((place) => place.place_id);
   }
 
-  fs.writeFileSync(
-    `${path.resolve(__dirname)}/../../crawl_data/idstocrawl.json`,
-    `[${ids.map((id) => `"${id}"`).join(",")}]`
-  );
+  // fs.writeFileSync(
+  //   `${path.resolve(__dirname)}/../../crawl_data/idstocrawl.json`,
+  //   `[${ids.map((id) => `"${id}"`).join(",")}]`
+  // );
 
   if (startfrom&&endAt) {
-    ids = ids.slice(startfrom,endAt+1);
+    ids = ids.slice(startfrom,endAt);
   }else if(startfrom){
     ids = ids.slice(startfrom);
   }
@@ -90,10 +90,10 @@ async function getData(page, place_id) {
     return;
   }
 
-  fs.writeFileSync(
-    `${path.resolve(__dirname)}../../../crawl_data/checkpoint.json`,
-    ` ["${place_id}"]`
-  );
+  // fs.writeFileSync(
+  //   `${path.resolve(__dirname)}../../../crawl_data/checkpoint.json`,
+  //   ` ["${place_id}"]`
+  // );
 
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
@@ -115,7 +115,7 @@ async function getData(page, place_id) {
     const string = "place?authuser";
     if (res.url().indexOf(string) > 0) {
       if (!placerequest) {
-        console.log("place data captured");
+        console.log("place data captured","color:blue");
         placerequest = true;
       }
       try {
