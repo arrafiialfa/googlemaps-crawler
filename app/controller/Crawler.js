@@ -24,7 +24,7 @@ exports.startApp = async (request, response) => {
   let headless = request.query.headless ? request.query.headless : true;
   let devtools = request.query.devtools ? request.query.devtools : true;
   startfrom = request.query.startfrom;
-  startfrom = request.query.endAt;
+  endAt = request.query.endAt;
 
   if (request.query.a) {
     ids = ["ChIJMWm78j_0aS4ROB7UZpoE2kU"];
