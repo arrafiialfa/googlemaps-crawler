@@ -18,7 +18,6 @@ let browser = null;
 let page = null;
 let ids = null;
 
-let startfrom = 0;
 
 exports.startApp = async (request, response) => {
   let headless = request.query.headless ? request.query.headless : true;
@@ -77,6 +76,63 @@ exports.startApp = async (request, response) => {
     }
   }
 };
+
+exports.updatePhoto = async (request,response) => {
+
+  startfrom = request.query.startfrom;
+  endAt = request.query.endAt;
+  
+  const query = {'photos_categorized.Semua':{$exists:false}}
+
+  const arr = await GmapsCrawled.findIds(query);
+  ids = arr.map((place) => place.place_id);
+  
+
+  // fs.writeFileSync(
+  //   `${path.resolve(__dirname)}/../../crawl_data/idstocrawl.json`,
+  //   `[${ids.map((id) => `"${id}"`).join(",")}]`
+  // );
+
+  if (startfrom && endAt) {
+    ids = ids.slice(startfrom, endAt);
+  } else if (startfrom) {
+    ids = ids.slice(startfrom);
+  }
+
+  if (!browser) {
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        devtools: false,
+
+        defaultViewport: null,
+        userDataDir: "./user_data",
+        args: [
+          "--lang=id-ID",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--start-maximized",
+        ],
+      });
+      page = await browser.newPage();
+      response.status(200).json({
+        message: `Crawler is Running, starting from ${startfrom?startfrom:0} of ${
+          ids.length - 1
+        } `,
+      });
+
+      for (const id of ids) {
+        await updateData(page, id);
+      }
+
+      console.log("FINISHED CRAWLING DATA");
+    } catch (error) {
+      console.log(error, "Retrying");
+      this.updatePhoto(request, response);
+    }
+  }
+
+}
 
 async function getData(page, place_id) {
   console.log("currently at", place_id);
@@ -323,3 +379,157 @@ async function getData(page, place_id) {
       });
   }
 }
+
+
+
+async function updateData(page, place_id) {
+  console.log("currently at", place_id);
+  
+  const doc =  await GmapsCrawled.findOne({
+      place_id: place_id,
+  })
+  
+
+  // fs.writeFileSync(
+  //   `${path.resolve(__dirname)}../../../crawl_data/checkpoint.json`,
+  //   ` ["${place_id}"]`
+  // );
+
+  const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
+
+  
+  const divToScrollSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
+  const photoMenuSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+  const allPhotoSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.ZKCDEc > div.RZ66Rb.FgCUCc > button";
+ 
+
+  //response listener
+ 
+  let photoSwitch = "Semua";
+  let photos = {};
+  page.on("response", async (res) => {
+    const string = "photo?authuser";
+    if (res.url().indexOf(string) > 0) {
+      try {
+        const arr = await res.text();
+
+        const datastring = `${arr}`;
+
+        const [key, data] = datastring.split(")]}'");
+
+        const obj = JSON.parse(data);
+
+        const photosarr = obj[0];
+
+        // fs.writeFileSync(
+        //   path.join(__dirname, `../../crawl_data/photo_${Date.now()}`),
+        //   data
+        // );
+
+        if (photosarr) {
+          photosarr.map((photo) => {
+            if (!photos[photoSwitch]) {
+              photos[photoSwitch] = [
+                {
+                  thumbnail: photo[6][0],
+                  image: photo[0],
+                },
+              ];
+            } else {
+              photos[photoSwitch].push({
+                thumbnail: photo[6][0],
+                image: photo[0],
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error(
+          error,
+          "error processing photo menu data at response listener"
+        );
+      }
+    }
+  });
+
+  try {
+    //goto main page then navigate to food/services menus then scroll
+    await page.goto(url);
+
+    async function navigateToPhotoMenu() {
+      try {
+        const photokeywords = [
+          ["menu", "Menu"],
+          ["suasana", "Suasana"],
+          ["makanan &amp; minuman", "Makanan & minuman"],
+          ["kopi", "Kopi"],
+          ["semua", "Semua"],
+        ];
+        console.log("navigating to photo menus");
+
+        let isFound = false;
+        await page.waitForSelector(photoMenuSelector, {
+          Visible: true,
+          timeout: 5000,
+        });
+        for (let keyword of photokeywords) {
+          console.log(`Looking photo of ${keyword}`);
+          photoSwitch = keyword[1];
+          let successs = await navigate.clickSelectorAndScroll(
+            page,
+            photoMenuSelector,
+            keyword[0],
+            {
+              divToScrollSelector: divToScrollSelector,
+              interval: 150,
+              timeout: 7000,
+            }
+          );
+          if (successs) {
+            isFound = true;
+            console.log(`Photo keyword ${keyword} found`);
+            await new Promise((res) =>
+              setTimeout(() => {
+                res();
+              }, 2000)
+            );
+          }
+        }
+      } catch (error) {
+        console.log(
+          "photo selector was not found, searching for all photo selector"
+        );
+        await navigate.clickSelectorAndScroll(page, allPhotoSelector, null, {
+          divToScrollSelector: divToScrollSelector,
+          interval: 150,
+          timeout: 7000,
+        });
+        return false;
+      }
+    }
+
+    console.log("navigating to photo menus");
+    await navigateToPhotoMenu();
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    //update document
+
+    doc.photos_categorized = {
+      ...photos,...doc.photos_categorized,
+    };
+
+    doc.save()
+      .then((response) => {
+        console.log("data is sucessfully updated", response);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }
+}
+

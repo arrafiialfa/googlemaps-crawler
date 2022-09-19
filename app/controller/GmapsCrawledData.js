@@ -36,3 +36,20 @@ exports.findOne = async (query) => {
     return result;
   }
 };
+
+exports.findIds = async (query) => {
+  try {
+    const data = await GmapsCrawledData.find(query, { place_id: 1 });
+    return data;
+  } catch (error) {
+    console.error(error);
+    const result = {
+      success: false,
+      message: "Get Data Failed!",
+      error: error,
+    };
+    return result;
+  }
+};
+
+
