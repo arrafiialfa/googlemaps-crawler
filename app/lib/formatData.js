@@ -74,16 +74,13 @@ exports.formatPlaceData = (data) => {
     open_state: data[6][34] ? data[6][34][4][4] : "",
     operating_hours:
       data[6][34] && data[6][34][1]
-        ? {
-            friday: data[6][34][1][4][1][0],
-            saturday: data[6][34][1][5][1][0],
-            sunday: data[6][34][1][6][1][0],
-            monday: data[6][34][1][0][1][0],
-            tuesday: data[6][34][1][1][1][0],
-            wednesday: data[6][34][1][2][1][0],
-            thursday: data[6][34][1][3][1][0],
-          }
-        : {},
+        ? data[6][34][1].map((data) => {
+            return {
+              day: data[0],
+              hours: data[1][0],
+            };
+          })
+        : [],
     phone: data[6][178] ? data[6][178][0][1][1][0] : "",
     place_id: data[6][78] || "",
     price: data[6][4] ? data[6][4][10] : null,

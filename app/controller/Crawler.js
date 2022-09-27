@@ -17,7 +17,8 @@ let browser = null;
 
 let page = null;
 let ids = null;
-
+let idsupdated = [];
+let idsnotupdated = [];
 
 exports.startApp = async (request, response) => {
   let headless = request.query.headless ? request.query.headless : true;
@@ -77,21 +78,14 @@ exports.startApp = async (request, response) => {
   }
 };
 
-exports.updatePhoto = async (request,response) => {
-
+exports.updatePhoto = async (request, response) => {
   startfrom = request.query.startfrom;
   endAt = request.query.endAt;
-  
-  const query = {'photos_categorized.Semua':{$exists:false}}
+
+  const query = { "photos_categorized.Semua": { $exists: false } };
 
   const arr = await GmapsCrawled.findIds(query);
   ids = arr.map((place) => place.place_id);
-  
-
-  // fs.writeFileSync(
-  //   `${path.resolve(__dirname)}/../../crawl_data/idstocrawl.json`,
-  //   `[${ids.map((id) => `"${id}"`).join(",")}]`
-  // );
 
   if (startfrom && endAt) {
     ids = ids.slice(startfrom, endAt);
@@ -102,11 +96,9 @@ exports.updatePhoto = async (request,response) => {
   if (!browser) {
     try {
       browser = await puppeteer.launch({
-        headless: true,
-        devtools: false,
-
+        headless: false,
+        devtools: true,
         defaultViewport: null,
-        userDataDir: "./user_data",
         args: [
           "--lang=id-ID",
           "--no-sandbox",
@@ -116,9 +108,9 @@ exports.updatePhoto = async (request,response) => {
       });
       page = await browser.newPage();
       response.status(200).json({
-        message: `Crawler is Running, starting from ${startfrom?startfrom:0} of ${
-          ids.length - 1
-        } `,
+        message: `Crawler is Running, starting from ${
+          startfrom ? startfrom : 0
+        } of ${ids.length - 1} `,
       });
 
       for (const id of ids) {
@@ -131,8 +123,54 @@ exports.updatePhoto = async (request,response) => {
       this.updatePhoto(request, response);
     }
   }
+};
 
-}
+exports.updatePlaceData = async (request, response) => {
+  startfrom = request.query.startfrom;
+  endAt = request.query.endAt;
+
+  const query = {};
+
+  const arr = await GmapsCrawled.findIds(query);
+  ids = arr.map((place) => place.place_id);
+
+  if (startfrom && endAt) {
+    ids = ids.slice(startfrom, endAt);
+  } else if (startfrom) {
+    ids = ids.slice(startfrom);
+  }
+
+  if (!browser) {
+    try {
+      browser = await puppeteer.launch({
+        headless: false,
+        devtools: false,
+        defaultViewport: null,
+        args: [
+          "--lang=id-ID",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--start-maximized",
+        ],
+      });
+      page = await browser.newPage();
+      response.status(200).json({
+        message: `Crawler is Running, starting from ${
+          startfrom ? startfrom : 0
+        } of ${ids.length - 1} `,
+      });
+
+      for (const id of ids) {
+        await updatePlaceData(page, id);
+      }
+
+      console.log("FINISHED CRAWLING DATA");
+    } catch (error) {
+      console.log(error, "Retrying");
+      this.updatePlaceData(request, response);
+    }
+  }
+};
 
 async function getData(page, place_id) {
   console.log("currently at", place_id);
@@ -380,34 +418,29 @@ async function getData(page, place_id) {
   }
 }
 
-
-
 async function updateData(page, place_id) {
   console.log("currently at", place_id);
-  
-  const doc =  await GmapsCrawled.findOne({
-      place_id: place_id,
-  })
-  
 
-  // fs.writeFileSync(
-  //   `${path.resolve(__dirname)}../../../crawl_data/checkpoint.json`,
-  //   ` ["${place_id}"]`
-  // );
+  const doc = await GmapsCrawled.findOne({
+    place_id: place_id,
+  });
+
+  fs.writeFileSync(
+    `${path.resolve(__dirname)}../../../crawl_data/checkpoint.json`,
+    ` ["${place_id}"]`
+  );
 
   const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
 
-  
   const divToScrollSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
   const photoMenuSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
   const allPhotoSelector =
     "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.ZKCDEc > div.RZ66Rb.FgCUCc > button";
- 
 
   //response listener
- 
+
   let photoSwitch = "Semua";
   let photos = {};
   page.on("response", async (res) => {
@@ -513,17 +546,18 @@ async function updateData(page, place_id) {
 
     console.log("navigating to photo menus");
     await navigateToPhotoMenu();
-
   } catch (err) {
     console.error(err);
   } finally {
     //update document
 
     doc.photos_categorized = {
-      ...photos,...doc.photos_categorized,
+      ...photos,
+      ...doc.photos_categorized,
     };
 
-    doc.save()
+    doc
+      .save()
       .then((response) => {
         console.log("data is sucessfully updated", response);
       })
@@ -533,3 +567,127 @@ async function updateData(page, place_id) {
   }
 }
 
+async function updatePlaceData(page, place_id) {
+  console.log("currently at", place_id);
+
+  fs.writeFileSync(
+    `${path.resolve(__dirname)}../../../crawl_data/checkpoint_${
+      process.env.PORT || 3000
+    }.json`,
+    ` ["${idsupdated}"]`
+  );
+
+  const url = `https://www.google.com/maps/place/?q=place_id:${place_id}`;
+
+  const divToScrollSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf";
+  const photoMenuSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div > div.fp2VUc > div.cRLbXd > div.dryRY > button > div.KoY8Lc > span.fontTitleSmall.fontTitleMedium";
+  const allPhotoSelector =
+    "#QA0Szd > div > div > div.w6VYqd > div.bJzME.tTVLSc > div > div.e07Vkf.kA9KIf > div > div > div.ZKCDEc > div.RZ66Rb.FgCUCc > button";
+
+  async function savePlaceData(place_data) {
+    const doc = await GmapsCrawled.findOne({
+      place_id: place_id,
+    });
+
+    return new Promise(function (resolve, reject) {
+      doc.operating_hours = place_data.operating_hours;
+      doc
+        .save()
+        .then((response) => {
+          console.log("data is sucessfully updated", response.operating_hours);
+          idsupdated.push(doc.place_id);
+          resolve();
+        })
+        .catch((error) => {
+          console.error(error);
+          resolve();
+        });
+    });
+  }
+
+  let place_data = null;
+
+  page.on("response", async (res) => {
+    const string = "place?authuser";
+    if (res.url().indexOf(string) > 0) {
+      console.log("%cplace data captured", "color:blue");
+      try {
+        const arr = await res.text();
+        const datastring = `${arr}`;
+        const [key, data] = datastring.split(")]}'");
+        const obj = JSON.parse(data);
+        place_data = formatData.formatPlaceData(obj);
+      } catch (err) {
+        console.error(err, "error processing place data at response listener");
+      }
+    }
+  });
+
+  //goto main page then navigate to food/services menus then scroll
+  await page.goto(url);
+
+  async function navigateToPhotoMenu() {
+    try {
+      const photokeywords = [
+        ["semua", "Semua"],
+        ["semua", "Semua"],
+        ["semua", "Semua"],
+      ];
+      console.log("navigating to photo menus");
+
+      let isFound = false;
+      await page.waitForSelector(photoMenuSelector, {
+        Visible: true,
+        timeout: 5000,
+      });
+      for (let keyword of photokeywords) {
+        if (place_data) {
+          return;
+        }
+        console.log(`Looking photo of ${keyword}`);
+        photoSwitch = keyword[1];
+        let successs = await navigate.clickSelectorAndScroll(
+          page,
+          photoMenuSelector,
+          keyword[0],
+          {
+            divToScrollSelector: divToScrollSelector,
+            interval: 150,
+            timeout: 2000,
+          }
+        );
+        if (successs) {
+          isFound = true;
+          console.log(`Photo keyword ${keyword} found`);
+          await new Promise((res) =>
+            setTimeout(() => {
+              res();
+            }, 2000)
+          );
+        }
+      }
+    } catch (error) {
+      console.log(
+        "photo selector was not found, searching for all photo selector"
+      );
+      await navigate.clickSelectorAndScroll(page, allPhotoSelector, null, {
+        divToScrollSelector: divToScrollSelector,
+        interval: 150,
+        timeout: 7000,
+      });
+      return false;
+    }
+  }
+
+  console.log("navigating to photo menus");
+  await navigateToPhotoMenu();
+
+  if (place_data) {
+    await savePlaceData(place_data);
+    idsupdated.push(place_data.place_id);
+  } else {
+    idsnotupdated.push(place_id);
+  }
+}

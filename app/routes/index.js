@@ -3,7 +3,8 @@ module.exports = (app) => {
   var router = require("express").Router();
 
   router.get("/", crawler.startApp);
-  router.get("/update-photo",crawler.updatePhoto);
+  router.get("/update-photo", crawler.updatePhoto);
+  router.get("/update-place-data", crawler.updatePlaceData);
   app.use("/api", router);
 };
 

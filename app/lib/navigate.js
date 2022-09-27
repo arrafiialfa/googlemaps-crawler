@@ -118,7 +118,7 @@ exports.clickSelectorAndScroll = (
       console.log(`Makjoss ${found}`);
       if (found) {
         await this.autoScroll(page, divToScrollSelector, interval, timeout);
-        await page.goBack();
+        await page.goBack({ timeout: 5000 });
         await new Promise((res) =>
           setTimeout(() => {
             res();
