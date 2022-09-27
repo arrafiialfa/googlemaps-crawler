@@ -168,7 +168,7 @@ exports.updatePlaceData = async (request, response) => {
   }
 
   console.log("all data successfully updated");
-  res.status(200).send("success");
+  response.status(200).send("success");
 
   if (crawl) {
     if (!browser) {
