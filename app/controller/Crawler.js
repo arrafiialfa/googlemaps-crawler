@@ -129,9 +129,11 @@ exports.updatePlaceData = async (request, response) => {
   startfrom = request.query.startfrom;
   endAt = request.query.endAt;
 
+  // const query = { "operating_hours.0.day": { $exists: false } };
   const query = {};
 
   const arr = await GmapsCrawled.findIds(query);
+  console.log(arr.length, " places captured");
   ids = arr.map((place) => place.place_id);
 
   if (startfrom && endAt) {
@@ -140,34 +142,64 @@ exports.updatePlaceData = async (request, response) => {
     ids = ids.slice(startfrom);
   }
 
-  if (!browser) {
-    try {
-      browser = await puppeteer.launch({
-        headless: false,
-        devtools: false,
-        defaultViewport: null,
-        args: [
-          "--lang=id-ID",
-          "--no-sandbox",
-          "--disable-dev-shm-usage",
-          "--start-maximized",
-        ],
-      });
-      page = await browser.newPage();
-      response.status(200).json({
-        message: `Crawler is Running, starting from ${
-          startfrom ? startfrom : 0
-        } of ${ids.length - 1} `,
-      });
+  let crawl = false;
 
-      for (const id of ids) {
-        await updatePlaceData(page, id);
+  for (const id of ids) {
+    const coffeeshop = await GmapsCrawled.findOne({
+      place_id: id,
+    });
+
+    const serp = await GmapsCrawled.findOne({
+      place_id: id,
+    });
+
+    coffeeshop.operating_hours = serp.operating_hours;
+
+    coffeeshop
+      .save()
+      .then((response) => {
+        console.log("data is sucessfully updated", response.operating_hours);
+        idsupdated.push(id);
+      })
+      .catch((error) => {
+        idsnotupdated.push(id);
+        console.error(error);
+      });
+  }
+
+  console.log("all data successfully updated");
+  res.status(200).send("success");
+
+  if (crawl) {
+    if (!browser) {
+      try {
+        browser = await puppeteer.launch({
+          headless: false,
+          devtools: false,
+          defaultViewport: null,
+          args: [
+            "--lang=id-ID",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--start-maximized",
+          ],
+        });
+        page = await browser.newPage();
+        response.status(200).json({
+          message: `Crawler is Running, starting from ${
+            startfrom ? startfrom : 0
+          } of ${ids.length - 1} `,
+        });
+
+        for (const id of ids) {
+          await updatePlaceData(page, id);
+        }
+
+        console.log("FINISHED CRAWLING DATA");
+      } catch (error) {
+        console.log(error, "Retrying");
+        this.updatePlaceData(request, response);
       }
-
-      console.log("FINISHED CRAWLING DATA");
-    } catch (error) {
-      console.log(error, "Retrying");
-      this.updatePlaceData(request, response);
     }
   }
 };
