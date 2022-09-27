@@ -52,4 +52,17 @@ exports.findIds = async (query) => {
   }
 };
 
-
+exports.findAll = async (query) => {
+  try {
+    const data = await GmapsCrawledData.find(query);
+    return data;
+  } catch (error) {
+    console.error(error);
+    const result = {
+      success: false,
+      message: "Get Data Failed!",
+      error: error,
+    };
+    return result;
+  }
+};

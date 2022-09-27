@@ -6,6 +6,7 @@ const formatData = require("../lib/formatData");
 const GooglePlaces = require("./GooglePlaces");
 const GmapsCrawled = require("./GmapsCrawledData");
 const db = require("../models/");
+const e = require("express");
 
 /**
  * @type {puppeteer.Browser}
@@ -132,9 +133,8 @@ exports.updatePlaceData = async (request, response) => {
   // const query = { "operating_hours.0.day": { $exists: false } };
   const query = {};
 
-  const arr = await GmapsCrawled.findIds(query);
-  console.log(arr.length, " places captured");
-  ids = arr.map((place) => place.place_id);
+  const places = await GmapsCrawled.findIds(query);
+  console.log(places.length, " places captured");
 
   if (startfrom && endAt) {
     ids = ids.slice(startfrom, endAt);
@@ -144,25 +144,19 @@ exports.updatePlaceData = async (request, response) => {
 
   let crawl = false;
 
-  for (const id of ids) {
-    const coffeeshop = await GmapsCrawled.findOne({
-      place_id: id,
-    });
+  for (const place of places) {
+    const serp = await GooglePlaces.findOne(place.place_id);
 
-    const serp = await GmapsCrawled.findOne({
-      place_id: id,
-    });
+    place.operating_hours = serp.operating_hours;
 
-    coffeeshop.operating_hours = serp.operating_hours;
-
-    coffeeshop
+    place
       .save()
       .then((response) => {
         console.log("data is sucessfully updated", response.operating_hours);
-        idsupdated.push(id);
+        idsupdated.push(response.place_id);
       })
       .catch((error) => {
-        idsnotupdated.push(id);
+        idsnotupdated.push(place.place_id);
         console.error(error);
       });
   }

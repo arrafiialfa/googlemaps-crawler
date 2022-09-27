@@ -1,7 +1,7 @@
 const db = require("../models");
 const GooglePlaces = db.serp_gmaps;
 
-exports.findDoc = async (place_id) => {
+exports.findOne = async (place_id) => {
   try {
     const data = await GooglePlaces.findOne(
       { place_id: place_id },
